@@ -24,6 +24,7 @@ class CourseTypesController extends OfcmAppController
 				'Course.Status',
 				'Course.CourseType'
 			));
+			$this->fire('Plugin.Ofcm.catalog_beforeRead');
 			$this->set('courseType', $this->CourseType->read(null, $id));
 		}
 

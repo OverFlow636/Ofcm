@@ -72,34 +72,10 @@ class Attending extends OfcmAppModel
 	public $belongsTo = array(
 		'Ofum.User',
 		'Ofcm.Course',
-		'Conference' => array(
-			'className' => 'Conference',
-			'foreignKey' => 'conference_id',
-			'conditions' => '',
-			'fields' => '',
-			'order' => ''
-		),
-		'Status' => array(
-			'className' => 'Status',
-			'foreignKey' => 'status_id',
-			'conditions' => '',
-			'fields' => '',
-			'order' => ''
-		),
-		'Payment' => array(
-			'className' => 'Payment',
-			'foreignKey' => 'payment_id',
-			'conditions' => '',
-			'fields' => '',
-			'order' => ''
-		),
-		'TeleformData' => array(
-			'className' => 'TeleformData',
-			'foreignKey' => 'teleform_data_id',
-			'conditions' => '',
-			'fields' => '',
-			'order' => ''
-		)
+		'Conference',
+		'Status',
+		'Payment',
+		'TeleformData'
 	);
 
 /**

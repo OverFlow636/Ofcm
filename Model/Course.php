@@ -3,23 +3,6 @@ App::uses('OfcmAppModel', 'Ofcm.Model');
 /**
  * Course Model
  *
- * @property CourseType $CourseType
- * @property Conference $Conference
- * @property FundingCourse $FundingCourse
- * @property Agency $Agency
- * @property ContactUser $ContactUser
- * @property ShippingLocation $ShippingLocation
- * @property Location $Location
- * @property Status $Status
- * @property Attending $Attending
- * @property Contact $Contact
- * @property Hosting $Hosting
- * @property Instructing $Instructing
- * @property LineItem $LineItem
- * @property Location $Location
- * @property Studentlist $Studentlist
- * @property Note $Note
- * @property Funding $Funding
  */
 class Course extends OfcmAppModel
 {
@@ -268,13 +251,7 @@ class Course extends OfcmAppModel
  * @var array
  */
 	public $belongsTo = array(
-		'CourseType' => array(
-			'className' => 'CourseType',
-			'foreignKey' => 'course_type_id',
-			'conditions' => '',
-			'fields' => '',
-			'order' => ''
-		),
+		'Ofcm.CourseType',
 		'Conference' => array(
 			'className' => 'Conference',
 			'foreignKey' => 'conference_id',
@@ -282,29 +259,9 @@ class Course extends OfcmAppModel
 			'fields' => '',
 			'order' => ''
 		),
-		'FundingCourse' => array(
-			'className' => 'FundingCourse',
-			'foreignKey' => 'funding_course_id',
-			'conditions' => '',
-			'fields' => '',
-			'order' => ''
-		),
-		'Agency' => array(
-			'className' => 'Agency',
-			'foreignKey' => 'agency_id',
-			'conditions' => '',
-			'fields' => '',
-			'order' => ''
-		),
-		'ContactUser' => array(
-			'className' => 'ContactUser',
-			'foreignKey' => 'contact_user_id',
-			'conditions' => '',
-			'fields' => '',
-			'order' => ''
-		),
+		'Funding',
 		'ShippingLocation' => array(
-			'className' => 'ShippingLocation',
+			'className' => 'Location',
 			'foreignKey' => 'shipping_location_id',
 			'conditions' => '',
 			'fields' => '',
@@ -332,97 +289,10 @@ class Course extends OfcmAppModel
  * @var array
  */
 	public $hasMany = array(
-		'Attending' => array(
-			'className' => 'Attending',
-			'foreignKey' => 'course_id',
-			'dependent' => false,
-			'conditions' => '',
-			'fields' => '',
-			'order' => '',
-			'limit' => '',
-			'offset' => '',
-			'exclusive' => '',
-			'finderQuery' => '',
-			'counterQuery' => ''
-		),
-		'Contact' => array(
-			'className' => 'Contact',
-			'foreignKey' => 'course_id',
-			'dependent' => false,
-			'conditions' => '',
-			'fields' => '',
-			'order' => '',
-			'limit' => '',
-			'offset' => '',
-			'exclusive' => '',
-			'finderQuery' => '',
-			'counterQuery' => ''
-		),
-		'Hosting' => array(
-			'className' => 'Hosting',
-			'foreignKey' => 'course_id',
-			'dependent' => false,
-			'conditions' => '',
-			'fields' => '',
-			'order' => '',
-			'limit' => '',
-			'offset' => '',
-			'exclusive' => '',
-			'finderQuery' => '',
-			'counterQuery' => ''
-		),
-		'Instructing' => array(
-			'className' => 'Instructing',
-			'foreignKey' => 'course_id',
-			'dependent' => false,
-			'conditions' => '',
-			'fields' => '',
-			'order' => '',
-			'limit' => '',
-			'offset' => '',
-			'exclusive' => '',
-			'finderQuery' => '',
-			'counterQuery' => ''
-		),
-		'LineItem' => array(
-			'className' => 'LineItem',
-			'foreignKey' => 'course_id',
-			'dependent' => false,
-			'conditions' => '',
-			'fields' => '',
-			'order' => '',
-			'limit' => '',
-			'offset' => '',
-			'exclusive' => '',
-			'finderQuery' => '',
-			'counterQuery' => ''
-		),
-		'Location' => array(
-			'className' => 'Location',
-			'foreignKey' => 'course_id',
-			'dependent' => false,
-			'conditions' => '',
-			'fields' => '',
-			'order' => '',
-			'limit' => '',
-			'offset' => '',
-			'exclusive' => '',
-			'finderQuery' => '',
-			'counterQuery' => ''
-		),
-		'Studentlist' => array(
-			'className' => 'Studentlist',
-			'foreignKey' => 'course_id',
-			'dependent' => false,
-			'conditions' => '',
-			'fields' => '',
-			'order' => '',
-			'limit' => '',
-			'offset' => '',
-			'exclusive' => '',
-			'finderQuery' => '',
-			'counterQuery' => ''
-		)
+		'Ofcm.Attending',
+		'Ofcm.Contact',
+		'Ofcm.Hosting',
+		'Ofcm.Instructing'
 	);
 
 
@@ -432,36 +302,7 @@ class Course extends OfcmAppModel
  * @var array
  */
 	public $hasAndBelongsToMany = array(
-		'Note' => array(
-			'className' => 'Note',
-			'joinTable' => 'courses_notes',
-			'foreignKey' => 'course_id',
-			'associationForeignKey' => 'note_id',
-			'unique' => true,
-			'conditions' => '',
-			'fields' => '',
-			'order' => '',
-			'limit' => '',
-			'offset' => '',
-			'finderQuery' => '',
-			'deleteQuery' => '',
-			'insertQuery' => ''
-		),
-		'Funding' => array(
-			'className' => 'Funding',
-			'joinTable' => 'funding_courses',
-			'foreignKey' => 'course_id',
-			'associationForeignKey' => 'funding_id',
-			'unique' => true,
-			'conditions' => '',
-			'fields' => '',
-			'order' => '',
-			'limit' => '',
-			'offset' => '',
-			'finderQuery' => '',
-			'deleteQuery' => '',
-			'insertQuery' => ''
-		)
+		'Note'
 	);
 
 }
