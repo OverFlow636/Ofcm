@@ -6,3 +6,5 @@ Router::connect('/Course-Catalog/FORT',				array('plugin'=>'ofcm', 'controller'=
 Router::connect('/Course-Catalog/Breaching',		array('plugin'=>'ofcm', 'controller'=>'CourseTypes', 'action'=>'catalog', 21));
 Router::connect('/Course-Catalog/LowLight',			array('plugin'=>'ofcm', 'controller'=>'CourseTypes', 'action'=>'catalog', 22));
 Router::connect('/Course-Catalog/TrainTheTrainer',	array('plugin'=>'ofcm', 'controller'=>'CourseTypes', 'action'=>'catalog', 26));
+
+Router::connect('/Certificates',					array('plugin'=>'ofcm', 'controller'=>'Certificates', 'action'=>'search'));
