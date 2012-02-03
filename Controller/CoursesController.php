@@ -7,6 +7,14 @@ App::uses('OfcmAppController', 'Ofcm.Controller');
 class CoursesController extends OfcmAppController
 {
 
+	public function __construct($request = null, $response = null)
+	{
+		$vars = Configure::read('Ofcm.CoursesController');
+		foreach($vars as $var => $value)
+			$this->$var = $value;
+		parent::__construct($request, $response);
+	}
+
 	public function view($id = null)
 	{
 		if ($id != null)
@@ -24,28 +32,19 @@ class CoursesController extends OfcmAppController
 
 	public function upcoming($render='calendar')
 	{
-
-		if ($render == 'list')
-		{
-			$this->set('courses', $this->Course->find('all', array(
-				'conditions'=>array(
-					'Course.startdate > NOW()',
-					'Course.conference_id'=>0
-				),
-				'order'=>array(
-					'Course.startdate'
-				)
-			)));
-		}
-
 		$this->set('render', $render);
 		$this->render('pages/'.$render);
 	}
 
-	public function dataTable()
+	public function dataTable($type='upcoming')
 	{
-		$conditions[] = 'Course.startdate > NOW()';
-		$conditions[] = array('Course.conference_id'=>0);
+		switch($type)
+		{
+			case 'upcoming':
+				$conditions[] = 'Course.startdate > NOW()';
+				$conditions[] = array('Course.conference_id'=>0);
+			break;
+		}
 
 		$order = array(
 			'Course.startdate'
@@ -79,6 +78,8 @@ class CoursesController extends OfcmAppController
 			$or = array();
 			$or[] = array('Course.location_description LIKE'=>$_GET['sSearch'].'%');
 			$or[] = array('CourseType.shortname LIKE'=>$_GET['sSearch'].'%');
+			$or[] = array('DATE_FORMAT(Course.startdate, "%M") LIKE'=>$_GET['sSearch'].'%');
+			$or[] = array('Course.id'=>$_GET['sSearch']);
 
 			$conditions[] = array('or'=>$or);
 		}
@@ -86,6 +87,11 @@ class CoursesController extends OfcmAppController
 
 		$found = $this->Course->find('count', array(
 			'conditions'=>$conditions
+		));
+		$this->Course->contain(array(
+			'Attending.Status',
+			'CourseType',
+			'Status'
 		));
 		$courses = $this->Course->find('all', array(
 			'conditions'=>$conditions,
@@ -100,11 +106,12 @@ class CoursesController extends OfcmAppController
 		$this->set('courses', $courses);
 	}
 
-	public function calendarFeed($id=null)
+	public function calendarFeed()
 	{
 		$this->autoRender = false;
 		$vars = $_GET;
 		$conditions = array('conditions' => array('UNIX_TIMESTAMP(startdate) >=' => $vars['start'], 'UNIX_TIMESTAMP(startdate) <=' => $vars['end']));
+		$this->Course->contain(array('CourseType', 'Status'));
 		$events = $this->Course->find('all', $conditions);
 		$data = array();
 		foreach($events as $event)
