@@ -38,11 +38,22 @@ class CoursesController extends OfcmAppController
 
 	public function dataTable($type='upcoming')
 	{
+		$conditions = array();
 		switch($type)
 		{
 			case 'upcoming':
 				$conditions[] = 'Course.startdate > NOW()';
 				$conditions[] = array('Course.conference_id'=>0);
+			break;
+
+			case 'admin_index':
+				$aColumns = array(
+					'Course.id',
+					'Course.startdate',
+					'CourseType.shortname',
+					'Course.location_description',
+					'Status.id'
+				);
 			break;
 		}
 
@@ -63,13 +74,30 @@ class CoursesController extends OfcmAppController
 
 		if (isset($_GET['iSortCol_0']))
 		{
-			switch($_GET['iSortCol_0'])
+			switch ($type)
 			{
-				case 0: $order = array('Course.startdate'=>$_GET['sSortDir_0']); break;
-				case 1: $order = array('Course.course_type_id'=>$_GET['sSortDir_0']); break;
-				case 2: $order = array('Course.location_description'=>$_GET['sSortDir_0']); break;
-				case 3: $order = array('Course.status_id'=>$_GET['sSortDir_0']); break;
+				case 'upcoming':
+					switch($_GET['iSortCol_0'])
+					{
+						case 0: $order = array('Course.startdate'=>$_GET['sSortDir_0']); break;
+						case 1: $order = array('Course.course_type_id'=>$_GET['sSortDir_0']); break;
+						case 2: $order = array('Course.location_description'=>$_GET['sSortDir_0']); break;
+						case 3: $order = array('Course.status_id'=>$_GET['sSortDir_0']); break;
+					}
+				break;
+
+				case 'admin_index':
+					switch($_GET['iSortCol_0'])
+					{
+						case 0: $order = array('Course.id'=>$_GET['sSortDir_0']); break;
+						case 1: $order = array('Course.startdate'=>$_GET['sSortDir_0']); break;
+						case 2: $order = array('Course.course_type_id'=>$_GET['sSortDir_0']); break;
+						case 3: $order = array('Course.location_description'=>$_GET['sSortDir_0']); break;
+						case 4: $order = array('Course.status_id'=>$_GET['sSortDir_0']); break;
+					}
+				break;
 			}
+
 		}
 
 
@@ -84,7 +112,13 @@ class CoursesController extends OfcmAppController
 			$conditions[] = array('or'=>$or);
 		}
 
+		for($i = 0; $i<count($aColumns);$i++)
+		{
+			if ($_GET['bSearchable_'.$i] == "true" && $_GET['sSearch_'.$i] != '')
+				$conditions[] = array($aColumns[$i] => $_GET['sSearch_'.$i]);
+		}
 
+		$this->Course->recursive = 1;
 		$found = $this->Course->find('count', array(
 			'conditions'=>$conditions
 		));
@@ -104,6 +138,7 @@ class CoursesController extends OfcmAppController
 
 		$this->set('found', $found);
 		$this->set('courses', $courses);
+		$this->render('tables'.DS.$type);
 	}
 
 	public function calendarFeed()
@@ -122,18 +157,33 @@ class CoursesController extends OfcmAppController
 					'start'=>date('Y-m-d 08:00', strtotime($event['Course']['startdate'])),
 					'end' => date('Y-m-d 17:00', strtotime($event['Course']['enddate'])),
 					'allDay' => false,
-					'url' => '/ofcm/CourseTypes/catalog/'.$event['CourseType']['id'],
+					'url' => '/ofcm/Attendings/apply/'.$event['Course']['id'],
 					'details' => $event['CourseType']['slider_summary'],
 					'color' => (empty($event['CourseType']['calendar_color'])?'#ccc':$event['CourseType']['calendar_color']),
 					'textColor' => (empty($event['CourseType']['calendar_textColor'])?'white':$event['CourseType']['calendar_textColor']),
 			);
 
 			if (strtotime($event['Course']['startdate']) < time())
+			{
 				$ce['className'] = 'ghost';
+				$ce['url'] = '#';
+			}
 
 			$data[] = $ce;
 		}
 		$this->response->type('text');
 		$this->response->body(json_encode($data));
 	}
+
+
+
+
+
+	/** admin functions **/
+
+	public function admin_index()
+	{
+
+	}
+
 }
