@@ -3,6 +3,9 @@
 App::uses('OfcmAppController', 'Ofcm.Controller');
 class CertificatesController extends OfcmAppController
 {
+	var $allowedActions = array(
+		'view', 'search'
+	);
 
 	public function search()
 	{

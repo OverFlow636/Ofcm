@@ -50,4 +50,23 @@ class CourseTypesController extends OfcmAppController
 		$this->set('courseType', $this->CourseType->read());
 	}
 
+
+	public function admin_view($id = null)
+	{
+		$this->set('type', $this->CourseType->read(null, $id));
+	}
+
+	public function admin_edit($id = null)
+	{
+		if ($this->request->is('post') || $this->request->is('put'))
+		{
+			if ($this->CourseType->save($this->request->data))
+			{
+				$this->Session->setFlash('Successfully edited the course type.', 'notices/success');
+				$this->redirect(array('action'=>'view', $id));
+			}
+		}
+		else
+			$this->request->data = $this->CourseType->read(null, $id);
+	}
 }

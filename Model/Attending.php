@@ -19,70 +19,28 @@ class Attending extends OfcmAppModel
 		'Containable'
 	);
 
-	public $validate = array(
-		'user_id' => array(
-			'numeric' => array(
-				'rule' => array('numeric'),
-				//'message' => 'Your custom message here',
-				//'allowEmpty' => false,
-				//'required' => false,
-				//'last' => false, // Stop validation after this rule
-				//'on' => 'create', // Limit validation to 'create' or 'update' operations
-			),
-		),
-		'course_id' => array(
-			'numeric' => array(
-				'rule' => array('numeric'),
-				//'message' => 'Your custom message here',
-				//'allowEmpty' => false,
-				//'required' => false,
-				//'last' => false, // Stop validation after this rule
-				//'on' => 'create', // Limit validation to 'create' or 'update' operations
-			),
-		),
-		'conference_id' => array(
-			'numeric' => array(
-				'rule' => array('numeric'),
-				//'message' => 'Your custom message here',
-				//'allowEmpty' => false,
-				//'required' => false,
-				//'last' => false, // Stop validation after this rule
-				//'on' => 'create', // Limit validation to 'create' or 'update' operations
-			),
-		),
-		'status_id' => array(
-			'numeric' => array(
-				'rule' => array('numeric'),
-				//'message' => 'Your custom message here',
-				//'allowEmpty' => false,
-				//'required' => false,
-				//'last' => false, // Stop validation after this rule
-				//'on' => 'create', // Limit validation to 'create' or 'update' operations
-			),
-		),
-	);
-
-	//The Associations below have been created with all possible keys, those that are not needed can be removed
-
-/**
- * belongsTo associations
- *
- * @var array
- */
 	public $belongsTo = array(
 		'Ofum.User',
 		'Ofcm.Course',
 		'Conference',
 		'Status',
 		'Payment',
-		'TeleformData'
+		'TeleformData',
+		'RegisteredBy'=>array(
+			'plugin'=>'Ofum',
+			'className'=>'User',
+			'foreignKey'=>'registered_by_id'
+		),
+		'ConfirmationEmail'=>array(
+			'className'=>'Message',
+			'foreignKey'=>'confirmation_message_id'
+		),
+		'CertStatusEmail'=>array(
+			'className'=>'Message',
+			'foreignKey'=>'certificate_message_id'
+		)
 	);
 
-/**
- * hasMany associations
- *
- * @var array
- */
 	public $hasMany = array(
 		'Studentlist' => array(
 			'className' => 'Studentlist',
