@@ -53,7 +53,7 @@ class CourseTypesController extends OfcmAppController
 
 	public function admin_view($id = null)
 	{
-		$this->set('type', $this->CourseType->read(null, $id));
+		$this->set('courseType', $this->CourseType->read(null, $id));
 	}
 
 	public function admin_edit($id = null)

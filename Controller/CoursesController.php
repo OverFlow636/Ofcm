@@ -8,7 +8,8 @@ App::uses('CakeEmail', 'network/Email');
 class CoursesController extends OfcmAppController
 {
 	var $allowedActions = array(
-		'getOpen'
+		'getOpen',
+		'calendarFeed'
 	);
 
 	public function __construct($request = null, $response = null)
@@ -40,7 +41,13 @@ class CoursesController extends OfcmAppController
 		$this->render('Courses'.DS.'pages'.DS.$render);
 	}
 
-	public function dataTable($type='upcoming')
+	public function admin_dataTable($type = 'upcoming', $extra = null)
+	{
+		$this->autoRender = false;
+		$this->dataTable($type, $extra);
+	}
+
+	public function dataTable($type='upcoming', $extra = null)
 	{
 		$conditions = array();
 		switch($type)
@@ -66,6 +73,23 @@ class CoursesController extends OfcmAppController
 					'CourseType.shortname',
 					'Course.location_description',
 					'Status.id'
+				);
+			break;
+
+			case 'conference':
+				$conditions = array(
+					'conference_id'=>$extra
+				);
+				$aColumns = array(
+					'Course.id',
+					'CourseType.shortname',
+					'Course.location_description',
+					'Status.id',
+					'Course.public',
+					'Course.attending_count',
+					'Course.disabled_spots',
+					'CourseType.maxStudents',
+					''
 				);
 			break;
 		}
@@ -107,6 +131,20 @@ class CoursesController extends OfcmAppController
 						case 2: $order = array('Course.course_type_id'=>$_GET['sSortDir_0']); break;
 						case 3: $order = array('Course.location_description'=>$_GET['sSortDir_0']); break;
 						case 4: $order = array('Course.status_id'=>$_GET['sSortDir_0']); break;
+					}
+				break;
+
+				case 'conference':
+					switch($_GET['iSortCol_0'])
+					{
+						case 0: $order = array('Course.id'=>$_GET['sSortDir_0']); break;
+						case 1: $order = array('Course.course_type_id'=>$_GET['sSortDir_0']); break;
+						case 2: $order = array('Course.location_description'=>$_GET['sSortDir_0']); break;
+						case 3: $order = array('Course.public'=>$_GET['sSortDir_0']); break;
+						case 4: $order = array('Course.status_id'=>$_GET['sSortDir_0']); break;
+						case 5: $order = array('Course.attending_count'=>$_GET['sSortDir_0']); break;
+						case 6: $order = array('Course.disabled_spots'=>$_GET['sSortDir_0']); break;
+						case 7: $order = array('CourseType.maxStudents'=>$_GET['sSortDir_0']); break;
 					}
 				break;
 			}
@@ -476,5 +514,48 @@ class CoursesController extends OfcmAppController
 
 			$this->set('type', $type);
 		}
+	}
+
+
+	/** Instructor functions **/
+
+	public function instructor_view($id = null)
+	{
+		$this->Course->contain(array(
+			//'Attending.User.Agency',
+			//'Attending.Status',
+			'Instructing.Instructor.Tier',
+			'Instructing.Status',
+			'Instructing.User',
+			'Location',
+			'Hosting.Agency',
+			'Hosting.Status',
+			'Contact',
+			'CourseType',
+			'Status',
+			'Note'
+		));
+		$this->set('course', $this->Course->read(null, $id));
+
+		$this->Course->Instructing->Instructor->contain(array(
+			'Tier',
+			'User'
+		));
+		$this->set('Instructor', $this->Course->Instructing->Instructor->findByUserId($this->Auth->User('id')));
+	}
+
+	public function instructor_index()
+	{
+		$this->Course->contain(array(
+			'Instructing.Status',
+			'Instructing.user_id = '.$this->Auth->user('id'),
+			'CourseType'
+		));
+		$this->set('courses', $this->Course->find('all', array(
+			'conditions'=>array(
+				'startdate > now()',
+				'status_id'=>10
+			)
+		)));
 	}
 }

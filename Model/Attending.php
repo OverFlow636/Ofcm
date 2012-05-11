@@ -42,32 +42,8 @@ class Attending extends OfcmAppModel
 	);
 
 	public $hasMany = array(
-		'Studentlist' => array(
-			'className' => 'Studentlist',
-			'foreignKey' => 'attending_id',
-			'dependent' => false,
-			'conditions' => '',
-			'fields' => '',
-			'order' => '',
-			'limit' => '',
-			'offset' => '',
-			'exclusive' => '',
-			'finderQuery' => '',
-			'counterQuery' => ''
-		),
-		'TeleformDatum' => array(
-			'className' => 'TeleformDatum',
-			'foreignKey' => 'attending_id',
-			'dependent' => false,
-			'conditions' => '',
-			'fields' => '',
-			'order' => '',
-			'limit' => '',
-			'offset' => '',
-			'exclusive' => '',
-			'finderQuery' => '',
-			'counterQuery' => ''
-		)
+		'Studentlist',
+		'TeleformData'
 	);
 
 }

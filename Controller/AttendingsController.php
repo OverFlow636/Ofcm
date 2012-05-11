@@ -169,41 +169,124 @@ class AttendingsController extends OfcmAppController
 		$this->render('Attendings'.DS.'steps'.DS.$step);
 	}
 
-	public function admin_dataTable($courseid =null)
+	public function admin_dataTable($courseid =null, $type = 'datatable')
 	{
-		$this->dataTable($courseid);
+		$this->autoRender = false;
+		$this->dataTable($courseid, $type);
 	}
 
-	public function dataTable($courseid=null)
+	public function dataTable($id=null,$type = 'datatable')
 	{
 		$conditions = array();
-		$conditions['Attending.course_id'] = $courseid;
-		/*switch($type)
-		{
-			case 'upcoming':
-				$conditions[] = 'Course.startdate > NOW()';
-				$conditions[] = array('Course.conference_id'=>0);
-			break;
 
-			case 'admin_index':
-				$aColumns = array(
-					'Course.id',
-					'Course.startdate',
-					'CourseType.shortname',
-					'Course.location_description',
-					'Status.id'
-				);
-			break;
-		}*/
-
-		$aColumns = array(
-			'',
-			'User.name',
-			'Agency.name',
-			'',
-			'Status.id',
-			'Attending.created'
+		$joins = array(
+			array(
+				'table'=>'users',
+				'alias'=>'User',
+				'type'=>'LEFT',
+				'conditions'=>array(
+					'User.id = Attending.user_id'
+				)
+			),
+			array(
+				'table'=>'agencies',
+				'alias'=>'Agency',
+				'type'=>'LEFT',
+				'conditions'=>array(
+					'Agency.id = User.agency_id'
+				)
+			)
 		);
+
+		switch($type)
+		{
+			case 'datatable':
+				$conditions['Attending.course_id'] = $id;
+				$aColumns = array(
+					'',
+					'User.name',
+					'Agency.name',
+					'',
+					'Status.id',
+					'Attending.created'
+				);
+				$joins[] = array(
+					'table'=>'statuses',
+					'alias'=>'Status',
+					'type'=>'LEFT',
+					'conditions'=>array(
+						'Status.id = Attending.status_id'
+					));
+			break;
+
+			case 'conference':
+				$conditions['Attending.conference_id'] = $id;
+				$aColumns = array(
+					'User.name',
+					'Agency.name',
+					'CourseType.shortname',
+					'PaymentStatus.id',
+					'AgencyState.id',
+					'Attending.created'
+				);
+				$joins[] = array(
+					'table'=>'locations',
+					'alias'=>'UserLocation',
+					'type'=>'LEFT',
+					'conditions'=>array(
+						'UserLocation.id = User.location_id'
+					));
+				$joins[] = array(
+					'table'=>'states',
+					'alias'=>'UserState',
+					'type'=>'LEFT',
+					'conditions'=>array(
+						'UserState.id = UserLocation.state_id'
+					));
+				$joins[] = array(
+					'table'=>'locations',
+					'alias'=>'AgencyLocation',
+					'type'=>'LEFT',
+					'conditions'=>array(
+						'AgencyLocation.id = Agency.main_address_id'
+					));
+				$joins[] = array(
+					'table'=>'states',
+					'alias'=>'AgencyState',
+					'type'=>'LEFT',
+					'conditions'=>array(
+						'AgencyState.id = AgencyLocation.state_id'
+					));
+				$joins[] = array(
+					'table'=>'payments',
+					'alias'=>'Payment',
+					'type'=>'LEFT',
+					'conditions'=>array(
+						'Payment.id = Attending.payment_id'
+					));
+				$joins[] = array(
+					'table'=>'statuses',
+					'alias'=>'PaymentStatus',
+					'type'=>'LEFT',
+					'conditions'=>array(
+						'PaymentStatus.id = Payment.status_id'
+					));
+				$joins[] = array(
+					'table'=>'courses',
+					'alias'=>'Course',
+					'type'=>'LEFT',
+					'conditions'=>array(
+						'Course.id = Attending.course_id'
+					));
+				$joins[] = array(
+					'table'=>'course_types',
+					'alias'=>'CourseType',
+					'type'=>'LEFT',
+					'conditions'=>array(
+						'CourseType.id = Course.course_type_id'
+					));
+			break;
+		}
 
 		$order = array(
 			'Attending.created'
@@ -222,9 +305,9 @@ class AttendingsController extends OfcmAppController
 
 		if (isset($_GET['iSortCol_0']))
 		{
-			/*switch ($type)
+			switch ($type)
 			{
-				case 'upcoming':*/
+				case 'datatable':
 					switch($_GET['iSortCol_0'])
 					{
 						case 0: $order = array('User.last_name'=>$_GET['sSortDir_0']); break;
@@ -232,21 +315,41 @@ class AttendingsController extends OfcmAppController
 						case 2: break;
 						case 3: $order = array('Attending.status_id'=>$_GET['sSortDir_0']); break;
 					}
-			/*	break;
-			}*/
+				break;
+
+				case 'conference':
+					switch($_GET['iSortCol_0'])
+					{
+						case 0: $order = array('User.last_name'=>$_GET['sSortDir_0']); break;
+						case 1: $order = array('Agency.name'=>$_GET['sSortDir_0']); break;
+						case 2: $order = array('CourseType.shortname'=>$_GET['sSortDir_0']);break;
+						case 3: $order = array('PaymentStatus.status'=>$_GET['sSortDir_0']); break;
+						case 4: $order = array('UserState.abbr'=>$_GET['sSortDir_0']); break;
+						case 5: $order = array('Attending.created'=>$_GET['sSortDir_0']); break;
+					}
+				break;
+			}
 
 		}
 
 
 		if (!empty($_GET['sSearch']))
 		{
-			/*$or = array();
-			$or[] = array('Course.location_description LIKE'=>$_GET['sSearch'].'%');
-			$or[] = array('CourseType.shortname LIKE'=>$_GET['sSearch'].'%');
-			$or[] = array('DATE_FORMAT(Course.startdate, "%M") LIKE'=>$_GET['sSearch'].'%');
-			$or[] = array('Course.id'=>$_GET['sSearch']);
+			$or = array();
+			$or[] = array('CONCAT(User.first_name, " ", User.last_name) LIKE'=>$_GET['sSearch'].'%');
+			$or[] = array('Agency.name LIKE'=>$_GET['sSearch'].'%');
+			$or[] = array('UserState.abbr LIKE'=>$_GET['sSearch'].'%');
+			$or[] = array('AgencyState.abbr LIKE'=>$_GET['sSearch'].'%');
 
-			$conditions[] = array('or'=>$or);*/
+			switch($type)
+			{
+				case 'conference':
+					$or[] = array('CourseType.shortname LIKE "'.$_GET['sSearch'].'%"');
+					$or[] = array('PaymentStatus.status LIKE "'.$_GET['sSearch'].'%"');
+				break;
+			}
+
+			$conditions[] = array('or'=>$or);
 		}
 
 		for($i = 0; $i<count($aColumns);$i++)
@@ -255,33 +358,6 @@ class AttendingsController extends OfcmAppController
 				$conditions[] = array($aColumns[$i] => $_GET['sSearch_'.$i]);
 		}
 
-
-		$joins = array(
-			array(
-				'table'=>'users',
-				'alias'=>'User',
-				'type'=>'LEFT',
-				'conditions'=>array(
-					'User.id = Attending.user_id'
-				)
-			),
-			array(
-				'table'=>'agencies',
-				'alias'=>'Agency',
-				'type'=>'LEFT',
-				'conditions'=>array(
-					'Agency.id = User.agency_id'
-				)
-			),
-			array(
-				'table'=>'statuses',
-				'alias'=>'Status',
-				'type'=>'LEFT',
-				'conditions'=>array(
-					'Status.id = Attending.status_id'
-				)
-			)
-		);
 		$found = $this->Attending->find('count', array(
 			'conditions'=>$conditions,
 			'joins'=>$joins
@@ -299,7 +375,7 @@ class AttendingsController extends OfcmAppController
 
 		$this->set('found', $found);
 		$this->set('courses', $courses);
-		$this->render('Attendings'.DS.'datatable');
+		$this->render('Attendings'.DS.'tables'.DS.$type);
 	}
 
 	public function admin_bulkEdit($courseid = null)

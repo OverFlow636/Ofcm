@@ -14,6 +14,7 @@ class Instructing extends OfcmAppModel
 	);
 
 	public $belongsTo = array(
+		'Ofum.User',
 		'Ofcm.Instructor',
 		'Ofcm.Course',
 		'Status',
