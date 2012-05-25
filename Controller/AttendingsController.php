@@ -397,4 +397,87 @@ class AttendingsController extends OfcmAppController
 			}
 		$this->redirect(array('controller'=>'Courses', 'action'=>'view', $courseid, 'students'));
 	}
+
+
+	public function fromState($state)
+	{
+		$joins = array(
+			array(
+				'table'=>'users',
+				'alias'=>'User',
+				'type'=>'LEFT',
+				'conditions'=>array(
+					'User.id = Attending.user_id'
+				)
+			),
+			array(
+				'table'=>'agencies',
+				'alias'=>'Agency',
+				'type'=>'LEFT',
+				'conditions'=>array(
+					'Agency.id = User.agency_id'
+				)
+			),
+			array(
+				'table'=>'locations',
+				'alias'=>'Location',
+				'type'=>'LEFT',
+				'conditions'=>array(
+					'Location.id = Agency.main_address_id'
+				)
+			),
+			array(
+				'table'=>'states',
+				'alias'=>'State',
+				'type'=>'LEFT',
+				'conditions'=>array(
+					'State.id = Location.state_id'
+				)
+			),
+			array(
+				'table'=>'locations',
+				'alias'=>'UserLocation',
+				'type'=>'LEFT',
+				'conditions'=>array(
+					'UserLocation.id = User.home_address'
+				)
+			),
+			array(
+				'table'=>'states',
+				'alias'=>'UserState',
+				'type'=>'LEFT',
+				'conditions'=>array(
+					'UserState.id = UserLocation.state_id'
+				)
+			)
+		);
+
+
+		$this->Attending->contain(array(
+		));
+
+		$this->set('count', $this->Attending->find('count', array(
+			'conditions'=>array(
+				'or'=>array(
+					'State.id'=>$state,
+					'UserState.id'=>$state
+				)
+			),
+			'joins'=>$joins,
+			'fields'=>'*'
+		)));
+
+		$this->Attending->contain(array(
+		));
+		$this->set('attendings', $this->Attending->find('all', array(
+			'conditions'=>array(
+				'State.abbr'=>$state
+			),
+			'joins'=>$joins,
+			'fields'=>'*',
+			'group'=>'Agency.id'
+		)));
+
+		$this->set('state', $state);
+	}
 }

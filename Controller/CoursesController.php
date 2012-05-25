@@ -8,15 +8,18 @@ App::uses('CakeEmail', 'network/Email');
 class CoursesController extends OfcmAppController
 {
 	var $allowedActions = array(
-		'getOpen',
-		'calendarFeed'
+		'upcoming',
+		'dataTable',
+		'calendarFeed',
+		'view'
 	);
 
 	public function __construct($request = null, $response = null)
 	{
 		$vars = Configure::read('Ofcm.CoursesController');
-		foreach($vars as $var => $value)
-			$this->$var = $value;
+		if (!empty($vars))
+			foreach($vars as $var => $value)
+				$this->$var = $value;
 		parent::__construct($request, $response);
 	}
 
@@ -25,7 +28,9 @@ class CoursesController extends OfcmAppController
 		if ($id != null)
 		{
 
-
+			$this->Course->contain(array(
+				'CourseType',
+			));
 			$this->set('course', $this->Course->read(null, $id));
 		}
 		else
@@ -55,6 +60,7 @@ class CoursesController extends OfcmAppController
 			case 'upcoming':
 				$conditions[] = 'Course.startdate > NOW()';
 				$conditions[] = array('Course.conference_id'=>0);
+				$conditions[] = array('Course.status_id'=>10);
 
 				$aColumns = array(
 					'Course.startdate',
@@ -196,7 +202,11 @@ class CoursesController extends OfcmAppController
 	{
 		$this->autoRender = false;
 		$vars = $_GET;
-		$conditions = array('conditions' => array('UNIX_TIMESTAMP(startdate) >=' => $vars['start'], 'UNIX_TIMESTAMP(startdate) <=' => $vars['end']));
+		$conditions = array(
+			'conditions' => array(
+				'UNIX_TIMESTAMP(startdate) >=' => $vars['start'], 'UNIX_TIMESTAMP(startdate) <=' => $vars['end'],
+				'status_id'=>10
+		));
 		$this->Course->contain(array('CourseType', 'Status'));
 		$events = $this->Course->find('all', $conditions);
 		$data = array();
@@ -213,6 +223,8 @@ class CoursesController extends OfcmAppController
 					'color' => (empty($event['CourseType']['calendar_color'])?'#ccc':$event['CourseType']['calendar_color']),
 					'textColor' => (empty($event['CourseType']['calendar_textColor'])?'white':$event['CourseType']['calendar_textColor']),
 			);
+			if (!$this->Auth->user())
+				$ce['url'] = '/ofcm/Courses/view/'.$event['Course']['id'];
 
 			if (strtotime($event['Course']['startdate']) < time())
 			{
@@ -516,6 +528,34 @@ class CoursesController extends OfcmAppController
 		}
 	}
 
+	public function admin_add()
+	{
+		if ($this->request->is('post') || $this->request->is('put'))
+		{
+			if ($this->Course->validates($this->request->data))
+			{
+				if ($this->Course->save($this->request->data))
+				{
+					$this->Session->setFlash('Course created.', 'notices/success');
+					$this->redirect(array('action'=>'view', $this->Course->getLastInsertId()));
+				}
+				else
+				{
+					$this->Session->setFlash('Error saving course.', 'notices/error');
+				}
+			}
+			else
+				$this->Session->setFlash('Please correct the validation errors below to continue.', 'notices/notice');
+		}
+
+		$this->set('courseTypes', $this->Course->CourseType->find('list'));
+		$conf[0] = 'Not a conference class';
+		$conf = array_merge($conf, $this->Course->Conference->find('list'));
+		$this->set('conferences', $conf);
+		$this->set('fundings', $this->Course->Funding->find('list'));
+		$this->set('statuses', $this->Course->Status->find('list'));
+	}
+
 
 	/** Instructor functions **/
 
@@ -530,7 +570,8 @@ class CoursesController extends OfcmAppController
 			'Location',
 			'Hosting.Agency',
 			'Hosting.Status',
-			'Contact',
+			'Contact.User.Agency',
+			'Contact.Status',
 			'CourseType',
 			'Status',
 			'Note'
