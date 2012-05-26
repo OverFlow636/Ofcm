@@ -234,7 +234,7 @@ class AttendingsController extends OfcmAppController
 					'alias'=>'UserLocation',
 					'type'=>'LEFT',
 					'conditions'=>array(
-						'UserLocation.id = User.location_id'
+						'UserLocation.id = User.home_address'
 					));
 				$joins[] = array(
 					'table'=>'states',
