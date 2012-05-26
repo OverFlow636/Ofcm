@@ -54,10 +54,14 @@ class CertificatesController extends OfcmAppController
 			if ($type != null)
 			{
 				$this->loadModel('SurveyCertificate');
+				$this->SurveyCertificate->contain(array(
+					'Conference'
+				));
 				$this->SurveyCertificate->id = $id;
 				$sc = $this->SurveyCertificate->read();
 
-				$cert['User']['name'] = $sc['SurveyCertificate']['fname'].' '.$sc['SurveyCertificate']['lname'];
+				$cert['User']['first_name'] = $sc['SurveyCertificate']['fname'];
+				$cert['User']['last_name'] = $sc['SurveyCertificate']['lname'];
 				$cert['Course']['CourseType']['certName'] = $sc['Conference']['name'];
 				$cert['Course']['CourseType']['hours'] = $sc['SurveyCertificate']['hours'];
 				$cert['Course']['enddate'] = date('F m Y',strtotime($sc['Conference']['enddate']));
