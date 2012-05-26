@@ -47,8 +47,39 @@ class CertificatesController extends OfcmAppController
 		}
 	}
 
-	public function view($id = null)
+	function view($id = null, $type=null)
 	{
+		if ($id != null)
+		{
+			if ($type != null)
+			{
+				$this->loadModel('SurveyCertificate');
+				$this->SurveyCertificate->id = $id;
+				$sc = $this->SurveyCertificate->read();
 
+				$cert['User']['name'] = $sc['SurveyCertificate']['fname'].' '.$sc['SurveyCertificate']['lname'];
+				$cert['Course']['CourseType']['certName'] = $sc['Conference']['name'];
+				$cert['Course']['CourseType']['hours'] = $sc['SurveyCertificate']['hours'];
+				$cert['Course']['enddate'] = date('F m Y',strtotime($sc['Conference']['enddate']));
+				$cert['Course']['CourseType']['id'] = 1;
+
+				$this->set('cert', $cert);
+				$this->set('type', $type);
+				$this->layout = 'pdf';
+			}
+			else
+			{
+				$this->loadModel('Ofcm.Attending');
+				$this->Attending->id=$id;
+				$this->Attending->contain(array(
+					'User',
+					'Course',
+					'Course.CourseType',
+					'Status'
+				));
+				$this->set('cert', $this->Attending->read());
+				$this->layout = 'pdf';
+			}
+		}
 	}
 }
