@@ -395,7 +395,9 @@ class AttendingsController extends OfcmAppController
 					case 'R': $this->Attending->delete(); break;
 				}
 			}
-		$this->redirect(array('controller'=>'Courses', 'action'=>'view', $courseid, 'students'));
+
+		$this->set('message', 'Saved instructor changes');
+		//$this->redirect(array('controller'=>'Courses', 'action'=>'view', $courseid, 'students'));
 	}
 
 

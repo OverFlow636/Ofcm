@@ -32,8 +32,8 @@ class OfcmListener implements CakeEventListener
 			),
 			'Instructing.Status',
 			'Instructing.Tier',
-			'Instructing.Instructor.Tier',
-			'Instructing.Instructor.User',
+			/*'Instructing.Instructor.Tier',
+			'Instructing.Instructor.User',*/
 			'Location.City',
 			'Location.State',
 			'Funding',

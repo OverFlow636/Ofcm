@@ -178,7 +178,9 @@ class InstructingsController extends OfcmAppController
 
 				}
 			}
-		$this->redirect(array('controller'=>'Courses', 'action'=>'view', $courseid, 'instructors'));
+
+		$this->set('message', 'Saved instructor changes');
+		//$this->redirect(array('controller'=>'Courses', 'action'=>'view', $courseid, 'instructors'));
 	}
 
 

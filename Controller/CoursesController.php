@@ -282,16 +282,155 @@ class CoursesController extends OfcmAppController
 
 	}
 
-	public function admin_view($id = null, $page = 'dashboard')
+	public function admin_view($id = null, $page = 'view')
 	{
 		if ($id == null)
 			die('no');
 
-		$this->fire('Plugin.Ofcm.adminView_beforeRead');
+		switch($page)
+		{
+			//<editor-fold defaultstate="collapsed" desc="View">
+			case 'view':
 
-		$c = $this->Course->read(null, $id);
-		$this->set('course', $c);
-		$this->render('Courses/pages/'.$page);
+				$this->Course->contain(array(
+					'CourseType',
+					'Conference.id',
+					'Conference.name',
+					'Status',
+					'Funding',
+					'Location.City',
+					'Location.State',
+					'ShippingLocation.City',
+					'ShippingLocation.State',
+					'Hosting.Agency.id',
+					'Hosting.Agency.name',
+					'Contact.User',
+					'Instructing'=>array(
+						'conditions'=>array(
+							'status_id'=>3
+						)
+					)
+				));
+				$c = $this->Course->read(null, $id);
+
+				$this->Course->Instructing->contain(array(
+					'Instructor.Tier',
+					'Instructor.User'
+				));
+
+				$c['Instructing'] = $this->Course->Instructing->find('all', array(
+					'conditions'=>array(
+						'Instructing.course_id'=>$id,
+						'Instructing.status_id'=>3
+					)
+				));
+				$this->set('course', $c);
+				$this->render('admin_view');
+			break;
+		//</editor-fold>
+
+			//<editor-fold defaultstate="collapsed" desc="Dashboard">
+			case 'dashboard':
+				$this->Course->contain(array(
+					'CourseType',
+					'Attending.Status',
+					'Attending.ConfirmationEmail'=>array(
+						'fields'=>array('read', 'created', 'modified')
+					),
+					'Attending.CertStatusEmail'=>array(
+						'fields'=>array('read', 'created', 'modified')
+					),
+					//'Attending.User',
+					'Instructing.ConfirmationEmail'=>array(
+						'fields'=>array('read', 'created', 'modified')
+					),
+					'Instructing.AfterActionEmail'=>array(
+						'fields'=>array('read', 'created', 'modified')
+					),
+					'Instructing.Status',
+					'Status',
+				));
+				$c = $this->Course->read(null, $id);
+				$this->set('course', $c);
+				$this->render('Courses/pages/'.$page);
+			break;
+			//</editor-fold>
+
+			//<editor-fold defaultstate="collapsed" desc="Instructors">
+			case 'instructors':
+				$this->Course->contain(array(
+					'Instructing.ConfirmationEmail'=>array(
+						'fields'=>array('read', 'created', 'modified')
+					),
+					'Instructing.AfterActionEmail'=>array(
+						'fields'=>array('read', 'created', 'modified')
+					),
+					'Instructing.Status',
+					'Status',
+				));
+				$c = $this->Course->read(null, $id);
+				$this->set('course', $c);
+				$this->render('Courses/pages/'.$page);
+			break;
+			//</editor-fold>
+
+			//<editor-fold defaultstate="collapsed" desc="Dashboard">
+			case 'students':
+				$this->Course->contain(array(
+					'Attending.Status',
+					'Attending.ConfirmationEmail'=>array(
+						'fields'=>array('read', 'created', 'modified')
+					),
+					'Attending.CertStatusEmail'=>array(
+						'fields'=>array('read', 'created', 'modified')
+					),
+					'Attending.User',
+				));
+				$c = $this->Course->read(null, $id);
+				$this->set('course', $c);
+				$this->render('Courses/pages/'.$page);
+			break;
+			//</editor-fold>
+
+			//<editor-fold defaultstate="collapsed" desc="Hosting">
+			case 'hosting':
+				$this->Course->contain(array(
+					'Hosting.Agency',
+					'Hosting.Status'
+				));
+				$c = $this->Course->read(null, $id);
+				$this->set('course', $c);
+				$this->render('Courses/pages/'.$page);
+			break;
+			//</editor-fold>
+
+			//<editor-fold defaultstate="collapsed" desc="Messages">
+			case 'messages':
+				$this->Course->contain(array(
+					'Instructing.ConfirmationEmail'=>array(
+						'fields'=>array('read', 'created', 'modified')
+					),
+					'Instructing.AfterActionEmail'=>array(
+						'fields'=>array('read', 'created', 'modified')
+					),
+					'Instructing.Status',
+					'Attending.Status',
+					'Attending.ConfirmationEmail'=>array(
+						'fields'=>array('read', 'created', 'modified')
+					),
+					'Attending.CertStatusEmail'=>array(
+						'fields'=>array('read', 'created', 'modified')
+					),
+					'Attending.User',
+				));
+				$c = $this->Course->read(null, $id);
+				$this->set('course', $c);
+				$this->render('Courses/pages/'.$page);
+			break;
+			//</editor-fold>
+		}
+
+
 	}
 
 	public function admin_changeStatus($id = null)
@@ -325,7 +464,7 @@ class CoursesController extends OfcmAppController
 			case 'status':
 				$course['Course']['startdatef'] = date('l, F jS, Y', strtotime($course['Course']['startdate']));
 				$course['Course']['enddatef'] = date('l, F jS, Y', strtotime($course['Course']['enddate']));
-				$course['Location']['gmap'] = '<a href="http://maps.google.com/maps?daddr=' . urlencode($course['Location']['addr1']. ', '.$course['Location']['City']['name'].', '.$course['Location']['State']['abbr'].' '.$course['Location']['zip']).'">Directions from Google Maps</a>';
+				$course['Location']['gmap'] = '<a href="http://maps.google.com/maps?daddr=' . urlencode($course['Location']['addr1']. ', '.$course['Location']['City']['name'].', '.$course['Location']['State']['abbr'].' '.$course['Location']['zip5']).'">Directions from Google Maps</a>';
 
 				$this->Course->contain(array(
 					'Attending.Status',
