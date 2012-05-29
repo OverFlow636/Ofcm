@@ -17,7 +17,8 @@ class CourseTypesController extends OfcmAppController
 				'Course'=>array(
 					'conditions'=>array(
 						'startdate > NOW()',
-						'Course.status_id'=>10
+						'Course.status_id'=>10,
+						'Course.conference_id'=>0
 					),
 					'order'=>array(
 						'startdate'=>'ASC'

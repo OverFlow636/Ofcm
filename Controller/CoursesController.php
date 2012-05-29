@@ -223,7 +223,7 @@ class CoursesController extends OfcmAppController
 					'color' => (empty($event['CourseType']['calendar_color'])?'#ccc':$event['CourseType']['calendar_color']),
 					'textColor' => (empty($event['CourseType']['calendar_textColor'])?'white':$event['CourseType']['calendar_textColor']),
 			);
-			if (!$this->Auth->user())
+			if (!$this->Auth->user() || !$event['Course']['public'])
 				$ce['url'] = '/ofcm/Courses/view/'.$event['Course']['id'];
 
 			if (strtotime($event['Course']['startdate']) < time())
