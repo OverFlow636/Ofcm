@@ -30,6 +30,8 @@ class CoursesController extends OfcmAppController
 
 			$this->Course->contain(array(
 				'CourseType',
+				'Hosting.Agency',
+				'Contact.User.Agency'
 			));
 			$this->set('course', $this->Course->read(null, $id));
 		}
