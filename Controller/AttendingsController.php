@@ -337,15 +337,16 @@ class AttendingsController extends OfcmAppController
 		{
 			$or = array();
 			$or[] = array('CONCAT(User.first_name, " ", User.last_name) LIKE'=>$_GET['sSearch'].'%');
+			$or[] = array('User.last_name LIKE'=>$_GET['sSearch'].'%');
 			$or[] = array('Agency.name LIKE'=>$_GET['sSearch'].'%');
-			$or[] = array('UserState.abbr LIKE'=>$_GET['sSearch'].'%');
-			$or[] = array('AgencyState.abbr LIKE'=>$_GET['sSearch'].'%');
 
 			switch($type)
 			{
 				case 'conference':
 					$or[] = array('CourseType.shortname LIKE "'.$_GET['sSearch'].'%"');
 					$or[] = array('PaymentStatus.status LIKE "'.$_GET['sSearch'].'%"');
+					$or[] = array('UserState.abbr LIKE'=>$_GET['sSearch'].'%');
+					$or[] = array('AgencyState.abbr LIKE'=>$_GET['sSearch'].'%');
 				break;
 			}
 
