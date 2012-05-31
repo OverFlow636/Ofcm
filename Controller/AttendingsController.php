@@ -310,10 +310,13 @@ class AttendingsController extends OfcmAppController
 				case 'datatable':
 					switch($_GET['iSortCol_0'])
 					{
-						case 0: $order = array('User.last_name'=>$_GET['sSortDir_0']); break;
-						case 1: $order = array('Agency.name'=>$_GET['sSortDir_0']); break;
-						case 2: break;
-						case 3: $order = array('Attending.status_id'=>$_GET['sSortDir_0']); break;
+						case 0: break;
+						case 1: $order = array('User.last_name'=>$_GET['sSortDir_0']); break;
+						case 2: $order = array('Agency.name'=>$_GET['sSortDir_0']); break;
+						case 3: $order = array('User.main_phone'=>$_GET['sSortDir_0']); break;
+						case 4: $order = array('Status.status'=>$_GET['sSortDir_0']); break;
+						case 5: $order = array('Attending.created'=>$_GET['sSortDir_0']); break;
+
 					}
 				break;
 
@@ -331,7 +334,6 @@ class AttendingsController extends OfcmAppController
 			}
 
 		}
-
 
 		if (!empty($_GET['sSearch']))
 		{
@@ -392,6 +394,7 @@ class AttendingsController extends OfcmAppController
 					case 'F': $this->Attending->saveField('status_id', 5); break;
 					case 'C': $this->Attending->saveField('status_id', 26); break;
 					case 'W': $this->Attending->saveField('status_id', 25); break;
+					case 'N': $this->Attending->saveField('status_id', 15); break;
 
 					case 'R': $this->Attending->delete(); break;
 				}
@@ -482,5 +485,114 @@ class AttendingsController extends OfcmAppController
 		)));
 
 		$this->set('state', $state);
+	}
+
+	public function admin_add($id)
+	{
+		if ($this->request->is('post') || $this->request->is('put'))
+		{
+			if (!$this->request->data['User']['Agency']['id'])
+				unset($this->request->data['User']['Agency']['id']);
+			if (!$this->request->data['User']['id'])
+				unset($this->request->data['User']['id']);
+
+			$this->request->data['Attending']['course_id'] = $id;
+
+			if ($this->Attending->validateAssociated($this->request->data, array('deep'=>true)))
+				if ($this->Attending->saveAssociated($this->request->data, array('deep'=>true)))
+					$this->set('saved', true);
+
+		}
+		$this->set('statuses', $this->Attending->Status->find('list'));
+	}
+
+	public function admin_export($id, $type='CJD')
+	{
+		$this->Attending->Course->Instructing->contain(array(
+			'User.HomeAddress',
+			'User.Agency.name',
+			'Status',
+			'Course.CourseType'
+		));
+		$instructors = $this->Attending->Course->Instructing->find('all', array(
+			'conditions'=>array(
+				'course_id'=>$id,
+				'status_id'=>3)
+		));
+
+		$this->Attending->contain(array(
+			'User' => array(
+				'order' => array(
+					'User.last_name'
+				)
+			),
+			'User.Agency',
+			'Status'=>array(
+				'conditions'=>array(
+					'Status.id'=>array(3,4,5,8,16,17,18,22,23,26)
+				)
+			),
+			'User.HomeAddress.City',
+			'User.HomeAddress.State',
+			'Course.CourseType'
+		));
+		$students = $this->Attending->findAllByCourseId($id);
+
+		if ($type=='BJA')
+		{
+			header("Content-Disposition: attachment; filename=export.csv");
+			echo "Physical Address, Location, Class Type, Date, Last Name, First Name\n";
+
+			foreach($students as $user)
+			{
+				echo '"'.$user['User']['HomeAddress']['addr1'].'",';
+				echo '"'.$user['Course']['location_description'].'",';
+				echo '"'.$user['CourseType']['name'].'",';
+				echo '"'.date('m/d/y',strtotime($user['Course']['startdate'])). ' - ' . date('m/d/y',strtotime($user['Course']['enddate'])).'",';
+				echo '"'.$user['User']['last_name'].'",';
+				echo '"'.$user['User']['first_name']."\"\n";
+			}
+
+			foreach($instructors as $user)
+			{
+				echo '"'.$user['User']['HomeAddress']['addr1'].'",';
+				echo '"'.$user['Course']['location_description'].'",';
+				echo '"'.$user['CourseType']['name'].'",';
+				echo '"'.date('m/d/y',strtotime($user['Course']['startdate'])). ' - ' . date('m/d/y',strtotime($user['Course']['enddate'])).'",';
+				echo '"'.$user['User']['last_name'].'",';
+				echo '"'.$user['User']['first_name']."\"\n";
+			}
+			die();
+		}
+
+		if ($type=='CJD')
+		{
+			header("Content-Disposition: attachment; filename=export.csv");
+			echo "First Name, Last Name, Phone Number, Email, DOB, PID, Status\n";
+
+			foreach($students as $user)
+			{
+				echo '"'.$user['User']['first_name'].'",';
+				echo '"'.$user['User']['last_name'].'",';
+				echo '"'.$user['User']['main_phone'].'",';
+				echo '"'.$user['User']['email'].'",';
+				echo '"'.date('m/d/y',strtotime($user['User']['dob'])).'",';
+				echo '"'.$user['User']['pid'].'",';
+				echo '"'.$user['Status']['status']."\"\n";
+				//echo '"'.$user['User']['first_name']."\"\n";
+			}
+			foreach($instructors as $user)
+			{
+				echo '"'.$user['User']['first_name'].'",';
+				echo '"'.$user['User']['last_name'].'",';
+				echo '"'.$user['User']['main_phone'].'",';
+				echo '"'.$user['User']['email'].'",';
+				echo '"'.date('m/d/y',strtotime($user['User']['dob'])).'",';
+				echo '"'.$user['User']['pid'].'",';
+				echo '"'.$user['Status']['status']."\"\n";
+				//echo '"'.$user['User']['first_name']."\"\n";
+			}
+			die();
+		}
 	}
 }

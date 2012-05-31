@@ -430,6 +430,21 @@ class CoursesController extends OfcmAppController
 				$this->render('Courses/pages/'.$page);
 			break;
 			//</editor-fold>
+
+			//<editor-fold defaultstate="collapsed" desc="Teleform">
+			case 'teleform':
+
+				$this->loadModel('TeleformData');
+				$tfd = $this->TeleformData->find('all', array(
+					'conditions'=>array(
+						'BatchCust1'=>$id
+					)
+				));
+
+				$this->set('tfd', $tfd);
+
+			break;
+			//</editor-fold>
 		}
 
 
