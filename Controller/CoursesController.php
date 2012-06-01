@@ -442,7 +442,8 @@ class CoursesController extends OfcmAppController
 				));
 
 				$this->set('tfd', $tfd);
-
+				$this->set('id', $id);
+				$this->render('Courses/pages/'.$page);
 			break;
 			//</editor-fold>
 		}

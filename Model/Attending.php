@@ -21,7 +21,10 @@ class Attending extends OfcmAppModel
 
 	public $belongsTo = array(
 		'Ofum.User',
-		'Ofcm.Course',
+		'Course'=>array(
+			'className'=>'Ofcm.Course',
+			'counterCache'=>true
+		),
 		'Conference',
 		'Status',
 		'Payment',

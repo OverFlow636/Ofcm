@@ -477,14 +477,18 @@ class AttendingsController extends OfcmAppController
 		));
 		$this->set('attendings', $this->Attending->find('all', array(
 			'conditions'=>array(
-				'State.abbr'=>$state
+				'State.id'=>$state
 			),
 			'joins'=>$joins,
 			'fields'=>'*',
-			'group'=>'Agency.id'
+			'group'=>'Agency.id',
+			'order'=>'Agency.name'
 		)));
 
-		$this->set('state', $state);
+		$this->set('trained', $state);
+
+		$this->loadModel('State');
+		$this->set('state', $this->State->read(null, $state));
 	}
 
 	public function admin_add($id)
@@ -516,8 +520,8 @@ class AttendingsController extends OfcmAppController
 		));
 		$instructors = $this->Attending->Course->Instructing->find('all', array(
 			'conditions'=>array(
-				'course_id'=>$id,
-				'status_id'=>3)
+				'Attending.course_id'=>$id,
+				'Attending.status_id'=>3)
 		));
 
 		$this->Attending->contain(array(
@@ -594,5 +598,196 @@ class AttendingsController extends OfcmAppController
 			}
 			die();
 		}
+	}
+
+	public function admin_index()
+	{
+		$this->set('count', $this->Attending->find('count'));
+
+		$this->set('courses', $this->Attending->find('count', array('group'=>'course_id')));
+
+		$this->set('states', $this->Attending->find('count', array(
+			'joins'=>array(
+				array(
+					'table'=>'users',
+					'alias'=>'User',
+					'type'=>'LEFT',
+					'conditions'=>array(
+						'User.id = Attending.user_id'
+					)
+				),array(
+					'table'=>'locations',
+					'alias'=>'HomeAddress',
+					'type'=>'LEFT',
+					'conditions'=>array(
+						'HomeAddress.id = User.home_address'
+					)
+				),array(
+					'table'=>'states',
+					'alias'=>'State',
+					'type'=>'LEFT',
+					'conditions'=>array(
+						'State.id = HomeAddress.state_id'
+					)
+				)
+			),
+			'fields'=>'count(distinct(State.id)) as count'
+		)));
+
+
+
+	}
+
+	public function admin_search($view=null)
+	{
+		switch($view)
+		{
+			case 'dt':
+
+				$conditions= array(
+					'User.email'=>'jan@alerrt.org'
+				);
+
+				$joins[] = array(
+					'table'=>'users',
+					'alias'=>'User',
+					'type'=>'LEFT',
+					'conditions'=>array(
+						'User.id = Attending.user_id'
+					));
+				$joins[] = array(
+					'table'=>'locations',
+					'alias'=>'UserLocation',
+					'type'=>'LEFT',
+					'conditions'=>array(
+						'UserLocation.id = User.home_address'
+					));
+				$joins[] = array(
+					'table'=>'agencies',
+					'alias'=>'Agency',
+					'type'=>'LEFT',
+					'conditions'=>array(
+						'Agency.id = User.agency_id'
+					));
+				$joins[] = array(
+					'table'=>'states',
+					'alias'=>'UserState',
+					'type'=>'LEFT',
+					'conditions'=>array(
+						'UserState.id = UserLocation.state_id'
+					));
+				$joins[] = array(
+					'table'=>'locations',
+					'alias'=>'AgencyLocation',
+					'type'=>'LEFT',
+					'conditions'=>array(
+						'AgencyLocation.id = Agency.main_address_id'
+					));
+				$joins[] = array(
+					'table'=>'states',
+					'alias'=>'AgencyState',
+					'type'=>'LEFT',
+					'conditions'=>array(
+						'AgencyState.id = AgencyLocation.state_id'
+					));
+				$joins[] = array(
+					'table'=>'statuses',
+					'alias'=>'Status',
+					'type'=>'LEFT',
+					'conditions'=>array(
+						'Status.id = Attending.status_id'
+					));
+				$joins[] = array(
+					'table'=>'courses',
+					'alias'=>'Course',
+					'type'=>'LEFT',
+					'conditions'=>array(
+						'Course.id = Attending.course_id'
+					));
+				$joins[] = array(
+					'table'=>'course_types',
+					'alias'=>'CourseType',
+					'type'=>'LEFT',
+					'conditions'=>array(
+						'CourseType.id = Course.course_type_id'
+					));
+
+				if (isset($_GET['iDisplayStart']) && $_GET['iDisplayLength'] != '-1')
+				{
+					$limit = $_GET['iDisplayLength'];
+					$offset = $_GET['iDisplayStart'];
+				}
+				else
+				{
+					$limit = 10;
+					$offset = 0;
+				}
+
+				if (isset($_GET['iSortCol_0']))
+				{
+					switch($_GET['iSortCol_0'])
+					{
+						case 0: $order = array('User.last_name'=>$_GET['sSortDir_0']); break;
+						case 1: $order = array('Agency.name'=>$_GET['sSortDir_0']); break;
+						case 2: $order = array('CourseType.shortname'=>$_GET['sSortDir_0']);break;
+						case 3: $order = array('Status.status'=>$_GET['sSortDir_0']); break;
+						case 4: $order = array('Course.startdate'=>$_GET['sSortDir_0']); break;
+					}
+				}
+
+				if (!empty($_GET['sSearch']))
+				{
+					$or = array();
+					$or[] = array('CONCAT(User.first_name, " ", User.last_name) LIKE'=>$_GET['sSearch'].'%');
+					$or[] = array('User.last_name LIKE'=>$_GET['sSearch'].'%');
+					$or[] = array('Agency.name LIKE'=>$_GET['sSearch'].'%');
+					$or[] = array('CourseType.shortname LIKE "'.$_GET['sSearch'].'%"');
+					$or[] = array('UserState.abbr LIKE'=>$_GET['sSearch'].'%');
+					$or[] = array('AgencyState.abbr LIKE'=>$_GET['sSearch'].'%');
+
+					$conditions[] = array('or'=>$or);
+				}
+
+				for($i = 0; $i<5;$i++)
+				{
+					if ($_GET['bSearchable_'.$i] == "true" && $_GET['sSearch_'.$i] != '' && $_GET['sSearch_'.$i] != '0')
+						$conditions[] = array($aColumns[$i] => $_GET['sSearch_'.$i]);
+				}
+
+				$found = $this->Attending->find('count', array(
+					'conditions'=>$conditions,
+					'joins'=>$joins
+				));
+				$courses = $this->Attending->find('all', array(
+					'conditions'=>$conditions,
+					'order'=>$order,
+					'limit'=>$limit,
+					'offset'=>$offset,
+					'joins'=>$joins,
+					'fields'=>'*'
+				));
+
+				$this->set('found', $found);
+				$this->set('courses', $courses);
+				$this->render('Attendings'.DS.'tables'.DS.'search');
+			break;
+			case null:
+
+				if ($this->request->is('post') || $this->request->is('put'))
+				{
+					$this->Session->write('filter', $this->request->data);
+					$this->render('Attendings'.DS.'options'.DS.$this->request->data['Attending']['opt']);
+				}
+				$this->set('courseTypes', array_merge(array(0=>'None'), $this->Attending->Course->CourseType->find('list')));
+				$this->set('states', array_merge(array(0=>'None'), $this->Attending->User->HomeAddress->State->find('list')));
+			break;
+		}
+	}
+
+	public function beforeFilter()
+	{
+		if ($this->request->params['action'] == 'admin_search')
+			$this->Security->csrfCheck = false;
+		parent::beforeFilter();
 	}
 }

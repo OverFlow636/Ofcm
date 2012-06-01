@@ -40,7 +40,8 @@ class CertificatesController extends OfcmAppController
 					'User',
 					'Course.CourseType',
 					'Status'
-				)
+				),
+				'limit'=>30
 			)));
 
 			$this->render('results');
