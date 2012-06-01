@@ -25,7 +25,9 @@ class Attending extends OfcmAppModel
 			'className'=>'Ofcm.Course',
 			'counterCache'=>true
 		),
-		'Conference',
+		'Conference'=>array(
+			'counterCache'=>true
+		),
 		'Status',
 		'Payment',
 		'TeleformData',

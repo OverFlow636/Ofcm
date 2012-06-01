@@ -180,7 +180,7 @@ class AttendingsController extends OfcmAppController
 		$this->dataTable($courseid, $type);
 	}
 
-	public function dataTable($id=null,$type = 'datatable')
+	public function dataTable($id=null, $type = 'datatable')
 	{
 		$conditions = array();
 
@@ -205,6 +205,37 @@ class AttendingsController extends OfcmAppController
 
 		switch($type)
 		{
+			case 'user':
+				$conditions['Attending.user_id'] = $id;
+				$aColumns = array(
+					'CourseType.shortname',
+					'CourseType.startdate',
+					'Status.status',
+					'Attending.created'
+				);
+				$joins[] = array(
+					'table'=>'courses',
+					'alias'=>'Course',
+					'type'=>'LEFT',
+					'conditions'=>array(
+						'Course.id = Attending.course_id'
+					));
+				$joins[] = array(
+					'table'=>'course_types',
+					'alias'=>'CourseType',
+					'type'=>'LEFT',
+					'conditions'=>array(
+						'CourseType.id = Course.course_type_id'
+					));
+				$joins[] = array(
+					'table'=>'statuses',
+					'alias'=>'Status',
+					'type'=>'LEFT',
+					'conditions'=>array(
+						'Status.id = Attending.status_id'
+					));
+			break;
+
 			case 'datatable':
 				$conditions['Attending.course_id'] = $id;
 				$aColumns = array(
@@ -334,6 +365,16 @@ class AttendingsController extends OfcmAppController
 						case 3: $order = array('PaymentStatus.status'=>$_GET['sSortDir_0']); break;
 						case 4: $order = array('UserState.abbr'=>$_GET['sSortDir_0']); break;
 						case 5: $order = array('Attending.created'=>$_GET['sSortDir_0']); break;
+					}
+				break;
+
+				case 'user':
+					switch($_GET['iSortCol_0'])
+					{
+						case 0: $order = array('CourseType.shortname'=>$_GET['sSortDir_0']);break;
+						case 1: $order = array('Course.startdate'=>$_GET['sSortDir_0']);break;
+						case 2: $order = array('Status.status'=>$_GET['sSortDir_0']); break;
+						case 3: $order = array('Attending.created'=>$_GET['sSortDir_0']); break;
 					}
 				break;
 			}

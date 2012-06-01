@@ -8,41 +8,96 @@ App::uses('OfcmAppController', 'Ofcm.Controller');
 class InstructingsController extends OfcmAppController
 {
 
-	public function admin_dataTable($courseid =null)
+	public function admin_dataTable($courseid =null, $type='datatable')
 	{
-		$this->dataTable($courseid);
+		$this->dataTable($courseid, $type);
 	}
 
-	public function dataTable($courseid=null)
+	public function dataTable($courseid=null, $type='datatable')
 	{
 		$conditions = array();
-		$conditions['Instructing.course_id'] = $courseid;
-		/*switch($type)
-		{
-			case 'upcoming':
-				$conditions[] = 'Course.startdate > NOW()';
-				$conditions[] = array('Course.conference_id'=>0);
-			break;
 
-			case 'admin_index':
+		$joins = array(array(
+				'table'=>'instructors',
+				'alias'=>'Instructor',
+				'type'=>'LEFT',
+				'conditions'=>array(
+					'Instructor.id = Instructing.instructor_id'
+				)
+			),
+			array(
+				'table'=>'users',
+				'alias'=>'User',
+				'type'=>'LEFT',
+				'conditions'=>array(
+					'User.id = Instructor.user_id'
+				)
+			),
+			array(
+				'table'=>'statuses',
+				'alias'=>'Status',
+				'type'=>'LEFT',
+				'conditions'=>array(
+					'Status.id = Instructing.status_id'
+				)
+			),
+			array(
+				'table'=>'tiers',
+				'alias'=>'Tier',
+				'type'=>'LEFT',
+				'conditions'=>array(
+					'Tier.id = Instructing.tier_id'
+				)
+			)
+		);
+
+		switch($type)
+		{
+			case 'user':
+				$conditions['Instructing.user_id'] = $courseid;
 				$aColumns = array(
-					'Course.id',
-					'Course.startdate',
 					'CourseType.shortname',
-					'Course.location_description',
+					'Course.startdate',
+					'Tier.id',
+					'role',
 					'Status.id'
 				);
-			break;
-		}*/
+				$joins[] = array(
+					'table'=>'courses',
+					'alias'=>'Course',
+					'type'=>'LEFT',
+					'conditions'=>array(
+						'Course.id = Instructing.course_id'
+					));
+				$joins[] = array(
+					'table'=>'course_types',
+					'alias'=>'CourseType',
+					'type'=>'LEFT',
+					'conditions'=>array(
+						'CourseType.id = Course.course_type_id'
+					));
 
-		$aColumns = array(
-			'',
-			'User.name',
-			'Agency.name',
-			'Tier.name',
-			'Status.id',
-			'Instructing.created'
-		);
+			break;
+
+			case 'datatable':
+				$conditions['Instructing.course_id'] = $courseid;
+				$aColumns = array(
+					'',
+					'User.name',
+					'Agency.name',
+					'Tier.name',
+					'Status.id',
+					'Instructing.created'
+				);
+				$joins[] = array(
+					'table'=>'agencies',
+					'alias'=>'Agency',
+					'type'=>'LEFT',
+					'conditions'=>array(
+						'Agency.id = User.agency_id'
+					));
+			break;
+		}
 
 		$order = array(
 			'Instructing.created'
@@ -61,9 +116,9 @@ class InstructingsController extends OfcmAppController
 
 		if (isset($_GET['iSortCol_0']))
 		{
-			/*switch ($type)
+			switch ($type)
 			{
-				case 'upcoming':*/
+				case 'datatable':
 					switch($_GET['iSortCol_0'])
 					{
 						case 0: break;
@@ -72,9 +127,19 @@ class InstructingsController extends OfcmAppController
 						case 3: break;
 						case 4: $order = array('Instructing.status_id'=>$_GET['sSortDir_0']); break;
 					}
-			/*	break;
-			}*/
+				break;
 
+				case 'user':
+					switch($_GET['iSortCol_0'])
+					{
+						case 0: $order = array('CourseType.shortname'=>$_GET['sSortDir_0']); break;
+						case 1: $order = array('Course.startdate'=>$_GET['sSortDir_0']); break;
+						case 2: $order = array('Tier.id'=>$_GET['sSortDir_0']); break;
+						case 3: $order = array('Instructing.role'=>$_GET['sSortDir_0']); break;
+						case 4: $order = array('Instructing.status_id'=>$_GET['sSortDir_0']); break;
+					}
+				break;
+			}
 		}
 
 
@@ -95,49 +160,6 @@ class InstructingsController extends OfcmAppController
 				$conditions[] = array($aColumns[$i] => $_GET['sSearch_'.$i]);
 		}
 
-
-		$joins = array(
-			array(
-				'table'=>'instructors',
-				'alias'=>'Instructor',
-				'type'=>'LEFT',
-				'conditions'=>array(
-					'Instructor.id = Instructing.instructor_id'
-				)
-			),
-			array(
-				'table'=>'users',
-				'alias'=>'User',
-				'type'=>'LEFT',
-				'conditions'=>array(
-					'User.id = Instructor.user_id'
-				)
-			),
-			array(
-				'table'=>'agencies',
-				'alias'=>'Agency',
-				'type'=>'LEFT',
-				'conditions'=>array(
-					'Agency.id = User.agency_id'
-				)
-			),
-			array(
-				'table'=>'statuses',
-				'alias'=>'Status',
-				'type'=>'LEFT',
-				'conditions'=>array(
-					'Status.id = Instructing.status_id'
-				)
-			),
-			array(
-				'table'=>'tiers',
-				'alias'=>'Tier',
-				'type'=>'LEFT',
-				'conditions'=>array(
-					'Tier.id = Instructing.tier_id'
-				)
-			)
-		);
 		$found = $this->Instructing->find('count', array(
 			'conditions'=>$conditions,
 			'joins'=>$joins
@@ -151,11 +173,9 @@ class InstructingsController extends OfcmAppController
 			'fields'=>'*'
 		));
 
-		//echo "/* ".print_r($order, true).' */';
-
 		$this->set('found', $found);
 		$this->set('courses', $courses);
-		$this->render('Instructings'.DS.'datatable');
+		$this->render('Instructings'.DS.'tables'.DS.$type);
 	}
 
 	public function admin_bulkEdit($courseid = null)

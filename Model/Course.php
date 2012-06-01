@@ -12,7 +12,9 @@ class Course extends OfcmAppModel
 
 	public $belongsTo = array(
 		'Ofcm.CourseType',
-		'Conference',
+		'Conference'=>array(
+			'counterCache'=>true
+		),
 		'Funding',
 		'ShippingLocation' => array(
 			'className' => 'Location',
