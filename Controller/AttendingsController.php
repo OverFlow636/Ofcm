@@ -18,7 +18,12 @@ class AttendingsController extends OfcmAppController
 		}
 
 		$this->Attending->Course->contain(array(
-			'CourseType'
+			'CourseType',
+			'Attending'=>array(
+				'conditions'=>array(
+					'Attending.status_id'=>array(3, 26)
+				)
+			)
 		));
 		$this->set('course', $this->Attending->Course->read());
 
