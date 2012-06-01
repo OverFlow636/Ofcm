@@ -649,10 +649,39 @@ class AttendingsController extends OfcmAppController
 		{
 			case 'dt':
 
-				$conditions= array(
-					'User.email'=>'jan@alerrt.org'
-				);
+				$conditions= array();
 
+				$filter = $this->Session->read('filter');
+				if ($filter)
+				{
+					$ors = array();
+					if (!empty($filter['User']['first_name']))
+						$ors[] = 'User.first_name LIKE "'.$filter['User']['first_name'].'%"';
+
+					if (!empty($filter['User']['last_name']))
+						$ors[] = 'User.last_name LIKE "'.$filter['User']['last_name'].'%"';
+
+					if (!empty($filter['User']['email']))
+						$ors[] = 'User.email LIKE "%'.$filter['User']['email'].'%"';
+
+					if (!empty($filter['Agency']['name']))
+						$ors[] = 'Agency.name LIKE "%'.$filter['Agency']['name'].'%"';
+
+					$ands = array();
+					if (!empty($filter['Attending']['course_type_id']) && $filter['Attending']['course_type_id'] > 0)
+						$ands['Course.course_type_id'] = $filter['Attending']['course_type_id'];
+
+					if (!empty($filter['Attending']['state_id']) && $filter['Attending']['state_id'] > 0)
+						$ands['UserLocation.state_id'] = $filter['Attending']['state_id'];
+
+					if (!empty($filter['Attending']['district']) && $filter['Attending']['district'] > 0)
+						$ands['UserLocation.congressional_district'] = $filter['Attending']['district'];
+
+					if (!empty($ors))
+						$conditions['or']= $ors;
+					if (!empty($ands))
+						$conditions['and']= $ands;
+				}
 				$joins[] = array(
 					'table'=>'users',
 					'alias'=>'User',
@@ -734,9 +763,10 @@ class AttendingsController extends OfcmAppController
 					{
 						case 0: $order = array('User.last_name'=>$_GET['sSortDir_0']); break;
 						case 1: $order = array('Agency.name'=>$_GET['sSortDir_0']); break;
-						case 2: $order = array('CourseType.shortname'=>$_GET['sSortDir_0']);break;
-						case 3: $order = array('Status.status'=>$_GET['sSortDir_0']); break;
-						case 4: $order = array('Course.startdate'=>$_GET['sSortDir_0']); break;
+						case 2: $order = array('UserState.abbr'=>$_GET['sSortDir_0']); break;
+						case 3: $order = array('CourseType.shortname'=>$_GET['sSortDir_0']);break;
+						case 4: $order = array('Status.status'=>$_GET['sSortDir_0']); break;
+						case 5: $order = array('Course.startdate'=>$_GET['sSortDir_0']); break;
 					}
 				}
 
@@ -783,8 +813,10 @@ class AttendingsController extends OfcmAppController
 					$this->Session->write('filter', $this->request->data);
 					$this->render('Attendings'.DS.'options'.DS.$this->request->data['Attending']['opt']);
 				}
+				$this->Attending->Course->CourseType->displayField = 'shortname';
 				$this->set('courseTypes', array_merge(array(0=>'None'), $this->Attending->Course->CourseType->find('list')));
-				$this->set('states', array_merge(array(0=>'None'), $this->Attending->User->HomeAddress->State->find('list')));
+				$this->loadModel('State');
+				$this->set('states', array_merge(array(0=>'None'), $this->State->find('list')));
 			break;
 		}
 	}
