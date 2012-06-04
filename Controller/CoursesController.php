@@ -482,7 +482,10 @@ class CoursesController extends OfcmAppController
 			case 'status':
 				$course['Course']['startdatef'] = date('l, F jS, Y', strtotime($course['Course']['startdate']));
 				$course['Course']['enddatef'] = date('l, F jS, Y', strtotime($course['Course']['enddate']));
-				$course['Location']['gmap'] = '<a href="http://maps.google.com/maps?daddr=' . urlencode($course['Location']['addr1']. ', '.$course['Location']['City']['name'].', '.$course['Location']['State']['abbr'].' '.$course['Location']['zip5']).'">Directions from Google Maps</a>';
+				if (isset($course['Location']['addr1']))
+					$course['Location']['gmap'] = '<a href="http://maps.google.com/maps?daddr=' . urlencode($course['Location']['addr1']. ', '.$course['Location']['City']['name'].', '.$course['Location']['State']['abbr'].' '.$course['Location']['zip5']).'">Directions from Google Maps</a>';
+				else
+					$this->set('missingLocation', true);
 
 				$this->Course->contain(array(
 					'Attending.Status',
@@ -508,6 +511,7 @@ class CoursesController extends OfcmAppController
 			switch($type)
 			{
 				case 'confirm':
+					//<editor-fold defaultstate="collapsed" desc="Confirmation emails">
 					$offc = $sta = array();
 					foreach($data['Attending'] as $att)
 						switch($att['status_id'])
@@ -545,9 +549,11 @@ class CoursesController extends OfcmAppController
 							'confirmation_message_id'=>$result['mid']
 						));
 					}
+					//</editor-fold>
 				break;
 
 				case 'iconfirm':
+					//<editor-fold defaultstate="collapsed" desc="Instructor confirmation emails">
 					$offc = $sta = array();
 					foreach($data['Instructing'] as $att)
 						switch($att['status_id'])
@@ -581,6 +587,59 @@ class CoursesController extends OfcmAppController
 						$this->Course->Instructing->save(array(
 							'id'=>$user['id'],
 							'confirmation_message_id'=>$result['mid']
+						));
+					}
+					//</editor-fold>
+				break;
+
+				case 'status':
+					$offc = $sta = array();
+					foreach($data['Attending'] as $att)
+						switch($att['status_id'])
+						{
+							case 3:
+							case 26: $offc[] = $att;
+							break;
+
+							case 4:
+							case 16:
+							case 22:
+							case 23:
+								$sta['pass'] = $att;
+							break;
+
+							case 5:
+							case 17:
+								$sta['fail'] = $att;
+							break;
+
+							case 8:
+							case 18:
+							case 19:
+								$sta['other'] = $att;
+						}
+
+					foreach($sta as $template => $user)
+					{
+						switch($template)
+						{
+							case 'pass': $template_id = 12; break;
+							case 'fail': $template_id = 13; break;
+							case 'other': $template_id = 14; break;
+						}
+						$args = array(
+							'email_template_id'=>$template_id,
+							'sendTo'=>$user['User']['email'],
+							'from'=>array('erin@alerrt.org'=>'Erin Etheridge')
+						);
+						if (!empty($user['RegisteredBy']))
+							$args['cc'] = $user['RegisteredBy']['email'];
+
+						$result = $this->_sendTemplateEmail($args, array_merge($user, $course, array('Attending'=>$att)));
+
+						$this->Course->Attending->save(array(
+							'id'=>$user['id'],
+							'certificate_message_id'=>$result['mid']
 						));
 					}
 				break;
