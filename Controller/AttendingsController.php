@@ -568,8 +568,8 @@ class AttendingsController extends OfcmAppController
 		));
 		$instructors = $this->Attending->Course->Instructing->find('all', array(
 			'conditions'=>array(
-				'Attending.course_id'=>$id,
-				'Attending.status_id'=>3)
+				'Instructing.course_id'=>$id,
+				'Instructing.status_id'=>3)
 		));
 
 		$this->Attending->contain(array(
