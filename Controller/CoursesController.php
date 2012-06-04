@@ -541,7 +541,6 @@ class CoursesController extends OfcmAppController
 						if (!empty($user['RegisteredBy']))
 							$args['cc'] = $user['RegisteredBy']['email'];
 
-						die('woulda sent');
 						$result = $this->_sendTemplateEmail($args, array_merge($user, $course));
 
 						$this->Course->Attending->save(array(
