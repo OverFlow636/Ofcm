@@ -74,6 +74,12 @@ class CoursesController extends OfcmAppController
 				);
 			break;
 
+			case 'agency':
+				$courses = $this->Course->Hosting->findAllByAgencyId($extra);
+				$ids = Set::extract('{n}/Hosting/course_id', $courses);
+				$conditions['Course.id'] = $ids;
+				$type= 'admin_index';
+				
 			case 'admin_index':
 				$aColumns = array(
 					'Course.id',

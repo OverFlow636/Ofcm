@@ -184,6 +184,8 @@ class AttendingsController extends OfcmAppController
 	{
 		$conditions = array();
 
+		$group = null;
+
 		$joins = array(
 			array(
 				'table'=>'users',
@@ -257,6 +259,7 @@ class AttendingsController extends OfcmAppController
 
 			case 'conference':
 				$conditions['Attending.conference_id'] = $id;
+				$group = 'Attending.user_id';
 				$aColumns = array(
 					'User.name',
 					'Agency.name',
@@ -407,18 +410,26 @@ class AttendingsController extends OfcmAppController
 				$conditions[] = array($aColumns[$i] => $_GET['sSearch_'.$i]);
 		}
 
-		$found = $this->Attending->find('count', array(
+		$arr = array(
 			'conditions'=>$conditions,
 			'joins'=>$joins
-		));
-		$courses = $this->Attending->find('all', array(
+		);
+		if (!empty($group))
+			$arr['group']= $group;
+
+		$found = $this->Attending->find('count', $arr);
+
+		$arr = array(
 			'conditions'=>$conditions,
 			'order'=>$order,
 			'limit'=>$limit,
 			'offset'=>$offset,
 			'joins'=>$joins,
 			'fields'=>'*'
-		));
+		);
+		if (!empty($group))
+			$arr['group']= $group;
+		$courses = $this->Attending->find('all', $arr);
 
 		//echo "/* ".print_r($order, true).' */';
 
