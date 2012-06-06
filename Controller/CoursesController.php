@@ -79,7 +79,7 @@ class CoursesController extends OfcmAppController
 				$ids = Set::extract('{n}/Hosting/course_id', $courses);
 				$conditions['Course.id'] = $ids;
 				$type= 'admin_index';
-				
+
 			case 'admin_index':
 				$aColumns = array(
 					'Course.id',
@@ -523,7 +523,9 @@ class CoursesController extends OfcmAppController
 						switch($att['status_id'])
 						{
 							case 3:
-							case 26: $offc[] = $att;
+							case 26:
+								if (!$att['confirmation_message_id'])
+									$offc[] = $att;
 							break;
 
 							case 4:
@@ -534,7 +536,9 @@ class CoursesController extends OfcmAppController
 							case 18:
 							case 19:
 							case 22:
-							case 23: $sta[] = $att;
+							case 23:
+								if (!$att['certificate_message_id'])
+									$sta[] = $att;
 						}
 
 					foreach($offc as $user)
@@ -603,25 +607,30 @@ class CoursesController extends OfcmAppController
 						switch($att['status_id'])
 						{
 							case 3:
-							case 26: $offc[] = $att;
+							case 26:
+								if (!$att['confirmation_message_id'])
+									$offc[] = $att;
 							break;
 
 							case 4:
 							case 16:
 							case 22:
 							case 23:
-								$sta['pass'] = $att;
+								if (!$att['certificate_message_id'])
+									$sta['pass'] = $att;
 							break;
 
 							case 5:
 							case 17:
-								$sta['fail'] = $att;
+								if (!$att['certificate_message_id'])
+									$sta['fail'] = $att;
 							break;
 
 							case 8:
 							case 18:
 							case 19:
-								$sta['other'] = $att;
+								if (!$att['certificate_message_id'])
+									$sta['other'] = $att;
 						}
 
 					foreach($sta as $template => $user)
