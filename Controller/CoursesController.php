@@ -633,7 +633,7 @@ class CoursesController extends OfcmAppController
 									$sta['other'][] = $att;
 						}
 
-					foreach($sta as $template => $user)
+					foreach($sta as $template => $list)
 					{
 						switch($template)
 						{
@@ -641,20 +641,24 @@ class CoursesController extends OfcmAppController
 							case 'fail': $template_id = 13; break;
 							case 'other': $template_id = 14; break;
 						}
-						$args = array(
-							'email_template_id'=>$template_id,
-							'sendTo'=>$user['User']['email'],
-							'from'=>array('erin@alerrt.org'=>'Erin Etheridge')
-						);
-						if (!empty($user['RegisteredBy']))
-							$args['cc'] = $user['RegisteredBy']['email'];
 
-						$result = $this->_sendTemplateEmail($args, array_merge($user, $course, array('Attending'=>$att)));
+						foreach($list as $user)
+						{
+							$args = array(
+								'email_template_id'=>$template_id,
+								'sendTo'=>$user['User']['email'],
+								'from'=>array('erin@alerrt.org'=>'Erin Etheridge')
+							);
+							if (!empty($user['RegisteredBy']))
+								$args['cc'] = $user['RegisteredBy']['email'];
 
-						$this->Course->Attending->save(array(
-							'id'=>$user['id'],
-							'certificate_message_id'=>$result['mid']
-						));
+							$result = $this->_sendTemplateEmail($args, array_merge($user, $course, array('Attending'=>$att)));
+
+							$this->Course->Attending->save(array(
+								'id'=>$user['id'],
+								'certificate_message_id'=>$result['mid']
+							));
+						}
 					}
 				break;
 			}
