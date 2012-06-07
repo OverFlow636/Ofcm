@@ -617,20 +617,20 @@ class CoursesController extends OfcmAppController
 							case 22:
 							case 23:
 								if (!$att['certificate_message_id'])
-									$sta['pass'] = $att;
+									$sta['pass'][] = $att;
 							break;
 
 							case 5:
 							case 17:
 								if (!$att['certificate_message_id'])
-									$sta['fail'] = $att;
+									$sta['fail'][] = $att;
 							break;
 
 							case 8:
 							case 18:
 							case 19:
 								if (!$att['certificate_message_id'])
-									$sta['other'] = $att;
+									$sta['other'][] = $att;
 						}
 
 					foreach($sta as $template => $user)
