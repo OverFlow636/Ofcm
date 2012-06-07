@@ -124,8 +124,9 @@ class InstructingsController extends OfcmAppController
 						case 0: break;
 						case 1: $order = array('User.last_name'=>$_GET['sSortDir_0']); break;
 						case 2: $order = array('Agency.name'=>$_GET['sSortDir_0']); break;
-						case 3: break;
+						case 3: $order = array('Tier.id'=>$_GET['sSortDir_0']);break;
 						case 4: $order = array('Instructing.status_id'=>$_GET['sSortDir_0']); break;
+						case 5: $order = array('Instructing.created'=>$_GET['sSortDir_0']); break;
 					}
 				break;
 
@@ -203,8 +204,6 @@ class InstructingsController extends OfcmAppController
 		//$this->redirect(array('controller'=>'Courses', 'action'=>'view', $courseid, 'instructors'));
 	}
 
-
-
 	public function instructor_apply($course = null)
 	{
 		if ($this->request->is('post') || $this->request->is('put'))
@@ -255,5 +254,40 @@ class InstructingsController extends OfcmAppController
 			'Status'
 		));
 		$this->set('course', $this->Instructing->Course->read(null, $course));
+	}
+
+	public function admin_add($id)
+	{
+		$this->set('id', $id);
+
+		if ($this->request->is('post') || $this->request->is('put'))
+		{
+			if (isset($this->request->data['instructor']))
+			{
+				$instructors = array();
+				foreach($this->request->data['instructor'] as $uid => $sel)
+				{
+					if ($sel)
+					{
+						$this->Instructing->Instructor->User->contain(array(
+							'Instructor.Tier'
+						));
+						$instructors[] = $this->Instructing->Instructor->User->read(null, $uid);
+					}
+				}
+				$this->set('instructors', $instructors);
+				$this->set('statuses', $this->Instructing->Status->find('list'));
+				$this->set('tiers', $this->Instructing->Tier->find('list'));
+				$this->render('Instructings'.DS.'pages'.DS.'instructor_add');
+			}
+			elseif (isset($this->request->data['Instructing']))
+			{
+				if ($this->Instructing->saveMany($this->request->data['Instructing']))
+				{
+					$this->set('saved', true);
+				}
+			}
+		}
+		$this->set('statuses', $this->Instructing->Status->find('list'));
 	}
 }

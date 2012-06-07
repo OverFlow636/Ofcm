@@ -881,4 +881,12 @@ class AttendingsController extends OfcmAppController
 			$this->Security->csrfCheck = false;
 		parent::beforeFilter();
 	}
+
+	public function admin_badge($id = null)
+	{
+		$this->Attending->contain(array(
+			'User.Agency'
+		));
+		$this->set('attending', $this->Attending->read(null, $id));
+	}
 }
