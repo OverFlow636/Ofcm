@@ -202,6 +202,13 @@ class AttendingsController extends OfcmAppController
 				'conditions'=>array(
 					'Agency.id = User.agency_id'
 				)
+			),array(
+				'table'=>'statuses',
+				'alias'=>'Status',
+				'type'=>'LEFT',
+				'conditions'=>array(
+					'Status.id = Attending.status_id'
+				)
 			)
 		);
 
@@ -229,13 +236,6 @@ class AttendingsController extends OfcmAppController
 					'conditions'=>array(
 						'CourseType.id = Course.course_type_id'
 					));
-				$joins[] = array(
-					'table'=>'statuses',
-					'alias'=>'Status',
-					'type'=>'LEFT',
-					'conditions'=>array(
-						'Status.id = Attending.status_id'
-					));
 			break;
 
 			case 'datatable':
@@ -248,15 +248,17 @@ class AttendingsController extends OfcmAppController
 					'Status.id',
 					'Attending.created'
 				);
-				$joins[] = array(
-					'table'=>'statuses',
-					'alias'=>'Status',
-					'type'=>'LEFT',
-					'conditions'=>array(
-						'Status.id = Attending.status_id'
-					));
 			break;
 
+			case 'conf':
+				$aColumns = array(
+					'Attending.id',
+					'User.name',
+					'Agency.name',
+					'CourseType.shortname',
+					'Course.startdate',
+					'PaymentStatus.id',
+				);
 			case 'conference':
 				$conditions['Attending.conference_id'] = $id;
 				$group = 'Attending.user_id';
@@ -371,6 +373,18 @@ class AttendingsController extends OfcmAppController
 					}
 				break;
 
+				case 'conf':
+					switch($_GET['iSortCol_0'])
+					{
+						case 0: break;
+						case 1: $order = array('User.last_name'=>$_GET['sSortDir_0']); break;
+						case 2: $order = array('Agency.name'=>$_GET['sSortDir_0']); break;
+						case 3: $order = array('CourseType.shortname'=>$_GET['sSortDir_0']);break;
+						case 4: $order = array('Course.startdate'=>$_GET['sSortDir_0']); break;
+						case 5: $order = array('PaymentStatus.status'=>$_GET['sSortDir_0']); break;
+					}
+				break;
+
 				case 'user':
 					switch($_GET['iSortCol_0'])
 					{
@@ -390,9 +404,11 @@ class AttendingsController extends OfcmAppController
 			$or[] = array('CONCAT(User.first_name, " ", User.last_name) LIKE'=>$_GET['sSearch'].'%');
 			$or[] = array('User.last_name LIKE'=>$_GET['sSearch'].'%');
 			$or[] = array('Agency.name LIKE'=>$_GET['sSearch'].'%');
+			$or[] = array('Status.status LIKE'=>$_GET['sSearch'].'%');
 
 			switch($type)
 			{
+				case 'conf':
 				case 'conference':
 					$or[] = array('CourseType.shortname LIKE "'.$_GET['sSearch'].'%"');
 					$or[] = array('PaymentStatus.status LIKE "'.$_GET['sSearch'].'%"');
@@ -888,5 +904,30 @@ class AttendingsController extends OfcmAppController
 			'User.Agency'
 		));
 		$this->set('attending', $this->Attending->read(null, $id));
+	}
+
+
+
+
+
+	public function kiosk_conference($conf = null)
+	{
+		$this->Attending->contain(array(
+			'Status'
+		));
+		$this->set('attending', $this->Attending->find('all', array(
+			'conditions'=>array(
+				'conference_id'=>$conf
+			)
+		)));
+		$this->set('conf', $conf);
+		$this->set('conflist', $this->Attending->Conference->find('list'));
+	}
+
+	public function kiosk_dataTable($courseid =null, $type = 'datatable')
+	{
+		$this->autoRender = false;
+		$this->dataTable($courseid, $type);
+		$this->set('conf', $courseid);
 	}
 }
