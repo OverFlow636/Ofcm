@@ -717,6 +717,7 @@ class AttendingsController extends OfcmAppController
 	{
 		switch($view)
 		{
+			//<editor-fold defaultstate="collapsed" desc="datatable">
 			case 'dt':
 
 				$conditions= array();
@@ -874,19 +875,161 @@ class AttendingsController extends OfcmAppController
 
 				$this->set('found', $found);
 				$this->set('courses', $courses);
-				$this->render('Attendings'.DS.'tables'.DS.'search');
+
+				$view = $filter['Attending']['opt'];
+				$this->render('Attendings'.DS.'tables'.DS.$view);
 			break;
+			//</editor-fold>
 			case null:
 
 				if ($this->request->is('post') || $this->request->is('put'))
 				{
 					$this->Session->write('filter', $this->request->data);
+					$opt = $this->request->data['Attending']['opt'];
+					switch($opt)
+					{
+						case 'cong':
+
+							$filter = $this->Session->read('filter');
+							if ($filter)
+							{
+								$ors = array();
+								if (!empty($filter['User']['first_name']))
+									$ors[] = 'User.first_name LIKE "'.$filter['User']['first_name'].'%"';
+
+								if (!empty($filter['User']['last_name']))
+									$ors[] = 'User.last_name LIKE "'.$filter['User']['last_name'].'%"';
+
+								if (!empty($filter['User']['email']))
+									$ors[] = 'User.email LIKE "%'.$filter['User']['email'].'%"';
+
+								if (!empty($filter['Agency']['name']))
+									$ors[] = 'Agency.name LIKE "%'.$filter['Agency']['name'].'%"';
+
+								$ands = array();
+								if (!empty($filter['Attending']['course_type_id']) && $filter['Attending']['course_type_id'] > 0)
+									$ands['Course.course_type_id'] = $filter['Attending']['course_type_id'];
+
+								if (!empty($filter['Attending']['state_id']) && $filter['Attending']['state_id'] > 0)
+									$ands['UserLocation.state_id'] = $filter['Attending']['state_id'];
+
+								if (!empty($filter['Attending']['district']) && $filter['Attending']['district'] > 0)
+									$ands['UserLocation.congressional_district'] = $filter['Attending']['district'];
+
+								if (!empty($ors))
+									$conditions['or']= $ors;
+								if (!empty($ands))
+									$conditions['and']= $ands;
+							}
+							$joins[] = array(
+								'table'=>'users',
+								'alias'=>'User',
+								'type'=>'LEFT',
+								'conditions'=>array(
+									'User.id = Attending.user_id'
+								));
+							$joins[] = array(
+								'table'=>'locations',
+								'alias'=>'UserLocation',
+								'type'=>'LEFT',
+								'conditions'=>array(
+									'UserLocation.id = User.home_address'
+								));
+							$joins[] = array(
+								'table'=>'agencies',
+								'alias'=>'Agency',
+								'type'=>'LEFT',
+								'conditions'=>array(
+									'Agency.id = User.agency_id'
+								));
+							$joins[] = array(
+								'table'=>'states',
+								'alias'=>'UserState',
+								'type'=>'LEFT',
+								'conditions'=>array(
+									'UserState.id = UserLocation.state_id'
+								));
+							$joins[] = array(
+								'table'=>'locations',
+								'alias'=>'AgencyLocation',
+								'type'=>'LEFT',
+								'conditions'=>array(
+									'AgencyLocation.id = Agency.main_address_id'
+								));
+							$joins[] = array(
+								'table'=>'states',
+								'alias'=>'AgencyState',
+								'type'=>'LEFT',
+								'conditions'=>array(
+									'AgencyState.id = AgencyLocation.state_id'
+								));
+							$joins[] = array(
+								'table'=>'statuses',
+								'alias'=>'Status',
+								'type'=>'LEFT',
+								'conditions'=>array(
+									'Status.id = Attending.status_id'
+								));
+							$joins[] = array(
+								'table'=>'courses',
+								'alias'=>'Course',
+								'type'=>'LEFT',
+								'conditions'=>array(
+									'Course.id = Attending.course_id'
+								));
+							$joins[] = array(
+								'table'=>'course_types',
+								'alias'=>'CourseType',
+								'type'=>'LEFT',
+								'conditions'=>array(
+									'CourseType.id = Course.course_type_id'
+								));
+
+
+							$trained = $this->Attending->find('count', array(
+								'conditions'=>$conditions,
+								'joins'=>$joins
+							));
+							$this->set('trained', $trained);
+
+							$courses = $this->Attending->find('count', array(
+								'conditions'=>$conditions,
+								'joins'=>$joins,
+								'group'=>'Attending.course_id'
+							));
+							$this->set('courses', $courses);
+
+							$states = $this->Attending->find('count', array(
+								'conditions'=>$conditions,
+								'joins'=>$joins,
+								'group'=>'UserState.id'
+							));
+							$this->set('states', $states);
+
+							$states = $this->Attending->find('all', array(
+								'conditions'=>$conditions,
+								'joins'=>$joins,
+								'group'=>'UserState.id',
+								'fields'=>array('UserState.*')
+							));
+							$states = Set::extract('{n}.UserState.name', $states);
+							$this->set('stateNames', $states);
+
+
+
+						break;
+					}
 					$this->render('Attendings'.DS.'options'.DS.$this->request->data['Attending']['opt']);
 				}
 				$this->Attending->Course->CourseType->displayField = 'shortname';
-				$this->set('courseTypes', array_merge(array(0=>'None'), $this->Attending->Course->CourseType->find('list')));
+
+				$ct = $this->Attending->Course->CourseType->find('list');
+				$ct[0] = 'None';
+				$this->set('courseTypes', $ct);
 				$this->loadModel('State');
-				$this->set('states', array_merge(array(0=>'None'), $this->State->find('list')));
+				$states = $this->State->find('list');
+				$states[0] = 'None';
+				$this->set('states', $states);
 			break;
 		}
 	}
