@@ -213,7 +213,8 @@ class CoursesController extends OfcmAppController
 		$conditions = array(
 			'conditions' => array(
 				'UNIX_TIMESTAMP(startdate) >=' => $vars['start'], 'UNIX_TIMESTAMP(startdate) <=' => $vars['end'],
-				'status_id'=>10
+				'status_id'=>10,
+				'conference_id'=>0
 		));
 		$this->Course->contain(array('CourseType', 'Status'));
 		$events = $this->Course->find('all', $conditions);
