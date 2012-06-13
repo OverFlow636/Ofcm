@@ -401,8 +401,9 @@ class AttendingsController extends OfcmAppController
 		if (!empty($_GET['sSearch']))
 		{
 			$or = array();
-			$or[] = array('CONCAT(User.first_name, " ", User.last_name) LIKE'=>$_GET['sSearch'].'%');
+			$or[] = array('User.first_name LIKE'=>$_GET['sSearch'].'%');
 			$or[] = array('User.last_name LIKE'=>$_GET['sSearch'].'%');
+			$or[] = array('CONCAT(User.first_name, " ", User.last_name) LIKE'=>$_GET['sSearch'].'%');
 			$or[] = array('Agency.name LIKE'=>$_GET['sSearch'].'%');
 			$or[] = array('Status.status LIKE'=>$_GET['sSearch'].'%');
 
@@ -447,9 +448,9 @@ class AttendingsController extends OfcmAppController
 			$arr['group']= $group;
 		$courses = $this->Attending->find('all', $arr);
 
-		//echo "/* ".print_r($order, true).' */';
+		//echo "/* ".print_r($conditions, true).'found:'.$found.' */';
 
-		$this->set('found', $found);
+		$this->set('found', intval($found));
 		$this->set('courses', $courses);
 		$this->render('Attendings'.DS.'tables'.DS.$type);
 	}
@@ -876,8 +877,7 @@ class AttendingsController extends OfcmAppController
 				$this->set('found', $found);
 				$this->set('courses', $courses);
 
-				$view = $filter['Attending']['opt'];
-				$this->render('Attendings'.DS.'tables'.DS.$view);
+				$this->render('Attendings'.DS.'tables'.DS.'search');
 			break;
 			//</editor-fold>
 			case null:

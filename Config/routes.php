@@ -8,6 +8,9 @@ Router::connect('/Course-Catalog/Breaching',		array('plugin'=>'ofcm', 'controlle
 Router::connect('/Course-Catalog/LowLight',			array('plugin'=>'ofcm', 'controller'=>'CourseTypes', 'action'=>'catalog', 22));
 Router::connect('/Course-Catalog/TrainTheTrainer',	array('plugin'=>'ofcm', 'controller'=>'CourseTypes', 'action'=>'catalog', 26));
 
+Router::connect('/certificates',					array('plugin'=>'ofcm', 'controller'=>'Certificates', 'action'=>'search'));
+Router::connect('/certificates/view/*',					array('plugin'=>'ofcm', 'controller'=>'Certificates', 'action'=>'view'));
+Router::connect('/certificates/*',					array('plugin'=>'ofcm', 'controller'=>'Certificates', 'action'=>'view'));
 Router::connect('/Certificates',					array('plugin'=>'ofcm', 'controller'=>'Certificates', 'action'=>'search'));
 Router::connect('/Certificates/view/*',					array('plugin'=>'ofcm', 'controller'=>'Certificates', 'action'=>'view'));
 Router::connect('/Certificates/*',					array('plugin'=>'ofcm', 'controller'=>'Certificates', 'action'=>'view'));
