@@ -28,10 +28,22 @@ class Course extends OfcmAppModel
 	);
 
 	public $hasMany = array(
-		'Ofcm.Attending',
-		'Ofcm.Contact',
-		'Ofcm.Hosting',
-		'Ofcm.Instructing'
+		'Attending'=>array(
+			'className'=>'Ofcm.Attending',
+			'dependent'=>true
+		),
+		'Contact'=>array(
+			'className'=>'Ofcm.Contact',
+			'dependent'=>true
+		),
+		'Hosting'=>array(
+			'className'=>'Ofcm.Hosting',
+			'dependent'=>true
+		),
+		'Instructing'=>array(
+			'className'=>'Ofcm.Instructing',
+			'dependent'=>true
+		)
 	);
 
 	public $hasAndBelongsToMany = array(

@@ -296,6 +296,9 @@ class CoursesController extends OfcmAppController
 		if ($id == null)
 			die('no');
 
+		if ($this->request->is('ajax'))
+			$this->layout = 'ajax';
+
 		switch($page)
 		{
 			//<editor-fold defaultstate="collapsed" desc="View">
@@ -457,8 +460,6 @@ class CoursesController extends OfcmAppController
 
 
 				$this->set('course', $c);
-				if ($this->request->is('ajax'))
-					$this->layout = 'ajax';
 				$this->render('Courses/pages/'.$page);
 			break;
 			//</editor-fold>
@@ -479,8 +480,6 @@ class CoursesController extends OfcmAppController
 			break;
 			//</editor-fold>
 		}
-
-
 	}
 
 	public function admin_changeStatus($id = null)
@@ -815,6 +814,20 @@ class CoursesController extends OfcmAppController
 		$this->set('conferences', $conf);
 		$this->set('fundings', $this->Course->Funding->find('list'));
 		$this->set('statuses', $this->Course->Status->find('list'));
+	}
+
+	public function admin_delete($id = null)
+	{
+		if ($this->request->is('post') || $this->request->is('put'))
+		{
+			if ($this->Course->delete($id))
+			{
+				$this->Session->setFlash('Successfully deleted course', 'notices/success');
+				$this->redirect(array('action'=>'index'));
+			}
+		}
+
+		$this->request->data = $this->Course->read(null, $id);
 	}
 
 
