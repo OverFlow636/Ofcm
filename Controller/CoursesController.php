@@ -549,7 +549,7 @@ class CoursesController extends OfcmAppController
 							'sendTo'=>$user['User']['email'],
 							'from'=>array('erin@alerrt.org'=>'Erin Etheridge')
 						);
-						if (!empty($user['RegisteredBy']))
+						if (!empty($user['RegisteredBy']['email']))
 							$args['cc'] = $user['RegisteredBy']['email'];
 
 						$result = $this->_sendTemplateEmail($args, array_merge($user, $course));
@@ -650,10 +650,11 @@ class CoursesController extends OfcmAppController
 								'sendTo'=>$user['User']['email'],
 								'from'=>array('erin@alerrt.org'=>'Erin Etheridge')
 							);
-							if (!empty($user['RegisteredBy']))
+							if (!empty($user['RegisteredBy']['email']))
 								$args['cc'] = $user['RegisteredBy']['email'];
 
-							$result = $this->_sendTemplateEmail($args, array_merge($user, $course, array('Attending'=>$att)));
+							//die(pr(array_merge($user, $course, array('Attending'=>$user))));
+							$result = $this->_sendTemplateEmail($args, array_merge($user, $course, array('Attending'=>$user)));
 
 							$this->Course->Attending->save(array(
 								'id'=>$user['id'],

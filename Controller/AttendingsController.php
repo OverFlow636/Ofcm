@@ -251,25 +251,28 @@ class AttendingsController extends OfcmAppController
 			break;
 
 			case 'conf':
-				$aColumns = array(
-					'Attending.id',
-					'User.name',
-					'Agency.name',
-					'CourseType.shortname',
-					'Course.startdate',
-					'PaymentStatus.id',
-				);
 			case 'conference':
 				$conditions['Attending.conference_id'] = $id;
 				$group = 'Attending.user_id';
-				$aColumns = array(
-					'User.name',
-					'Agency.name',
-					'CourseType.shortname',
-					'PaymentStatus.id',
-					'AgencyState.id',
-					'Attending.created'
-				);
+				if ($type == 'conf')
+					$aColumns = array(
+						'Attending.id',
+						'User.name',
+						'Agency.name',
+						'CourseType.shortname',
+						'Course.startdate',
+						'PaymentStatus.id',
+						'Status.id',
+					);
+				else
+					$aColumns = array(
+						'User.name',
+						'Agency.name',
+						'CourseType.shortname',
+						'PaymentStatus.id',
+						'AgencyState.id',
+						'Attending.created'
+					);
 				$joins[] = array(
 					'table'=>'locations',
 					'alias'=>'UserLocation',
@@ -382,6 +385,7 @@ class AttendingsController extends OfcmAppController
 						case 3: $order = array('CourseType.shortname'=>$_GET['sSortDir_0']);break;
 						case 4: $order = array('Course.startdate'=>$_GET['sSortDir_0']); break;
 						case 5: $order = array('PaymentStatus.status'=>$_GET['sSortDir_0']); break;
+						case 6: $order = array('Status.status'=>$_GET['sSortDir_0']); break;
 					}
 				break;
 
@@ -424,8 +428,20 @@ class AttendingsController extends OfcmAppController
 		for($i = 0; $i<count($aColumns);$i++)
 		{
 			if ($_GET['bSearchable_'.$i] == "true" && $_GET['sSearch_'.$i] != '' && $_GET['sSearch_'.$i] != '0')
-				$conditions[] = array($aColumns[$i] => $_GET['sSearch_'.$i]);
+			{
+				if (strpos($_GET['sSearch_'.$i], ','))
+				{
+					$all = explode(',', $_GET['sSearch_'.$i]);
+					$ors = array();
+					foreach($all as $one)
+						$ors[] = array($aColumns[$i] => $one);
+					$conditions['or']=$ors;
+				}
+				else
+					$conditions[] = array($aColumns[$i] => $_GET['sSearch_'.$i]);
+			}
 		}
+		//die(pr($conditions));
 
 		$arr = array(
 			'conditions'=>$conditions,
@@ -1072,5 +1088,24 @@ class AttendingsController extends OfcmAppController
 		$this->autoRender = false;
 		$this->dataTable($courseid, $type);
 		$this->set('conf', $courseid);
+	}
+
+	public function kiosk_bulkEdit($courseid = null)
+	{
+		foreach($this->request->data['attending'] as $attid => $selected)
+			if ($selected)
+			{
+				$this->Attending->id = $attid;
+				switch($this->request->data['Attending']['action'])
+				{
+					case 'IN': $this->Attending->saveField('status_id', 13); break;
+
+
+
+				}
+			}
+
+		$this->set('message', 'Saved student changes');
+		//$this->redirect(array('controller'=>'Courses', 'action'=>'view', $courseid, 'students'));
 	}
 }
