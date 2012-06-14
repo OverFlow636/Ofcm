@@ -415,25 +415,50 @@ class CoursesController extends OfcmAppController
 
 			//<editor-fold defaultstate="collapsed" desc="Messages">
 			case 'messages':
-				$this->Course->contain(array(
-					'Instructing.ConfirmationEmail'=>array(
+
+				$this->Course->Attending->contain(array(
+					'Status',
+					'ConfirmationEmail'=>array(
 						'fields'=>array('read', 'created', 'modified')
 					),
-					'Instructing.AfterActionEmail'=>array(
+					'CertStatusEmail'=>array(
 						'fields'=>array('read', 'created', 'modified')
 					),
-					'Instructing.Status',
-					'Attending.Status',
-					'Attending.ConfirmationEmail'=>array(
-						'fields'=>array('read', 'created', 'modified')
-					),
-					'Attending.CertStatusEmail'=>array(
-						'fields'=>array('read', 'created', 'modified')
-					),
-					'Attending.User',
+					'User'
 				));
-				$c = $this->Course->read(null, $id);
+				$att = $this->Course->Attending->find('all', array(
+					'conditions'=>array(
+						'course_id'=>$id,
+						'or'=>array(
+							array('status_id'=>3),
+							array('status_id'=>26)
+						)
+					)
+				));
+				$c['Attending'] = $att;
+
+				$this->Course->Instructing->contain(array(
+					'Status',
+					'ConfirmationEmail'=>array(
+						'fields'=>array('read', 'created', 'modified')
+					),
+					'AfterActionEmail'=>array(
+						'fields'=>array('read', 'created', 'modified')
+					),
+					'Instructor.User'
+				));
+				$att = $this->Course->Instructing->find('all', array(
+					'conditions'=>array(
+						'course_id'=>$id,
+						'Instructing.status_id'=>3,
+					)
+				));
+				$c['Instructing'] = $att;
+
+
 				$this->set('course', $c);
+				if ($this->request->is('ajax'))
+					$this->layout = 'ajax';
 				$this->render('Courses/pages/'.$page);
 			break;
 			//</editor-fold>
