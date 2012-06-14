@@ -81,12 +81,13 @@ class CoursesController extends OfcmAppController
 				$type= 'admin_index';
 
 			case 'admin_index':
+				if ($extra)
+					$conditions['Course.status_id'] = $extra;
 				$aColumns = array(
 					'Course.id',
 					'Course.startdate',
 					'CourseType.shortname',
-					'Course.location_description',
-					'Status.id'
+					'Course.location_description'
 				);
 			break;
 
@@ -286,9 +287,10 @@ class CoursesController extends OfcmAppController
 
 	/** admin functions **/
 
-	public function admin_index()
+	public function admin_index($page=null)
 	{
-
+		if ($page)
+			$this->render('Courses'.DS.'pages'.DS.'index'.DS.$page);
 	}
 
 	public function admin_view($id = null, $page = 'view')
@@ -788,7 +790,177 @@ class CoursesController extends OfcmAppController
 		}
 	}
 
-	public function admin_add()
+	public function admin_add($step=1)
+	{
+		//<editor-fold defaultstate="collapsed" desc="post">
+		if ($this->request->is('post') || $this->request->is('put'))
+		{
+			switch($step)
+			{
+				case 1:
+					$this->Session->write('newcourse.info',$this->request->data['Course']);
+					$this->redirect(array('action'=>'add', 2));
+				break;
+
+				case 2:
+					$newcourse = $this->Session->read('newcourse');
+					$newcourse = array_merge($newcourse, $this->request->data);
+					$this->Session->write('newcourse', $newcourse);
+					$this->redirect(array('action'=>'add', 3));
+				break;
+
+				case 3:
+					// poc_id == 0  = no contact
+					// poc_id == 1  = create new contact
+					// other = contact_user_id
+					if ($this->request->data['Course']['poc_id'] == 1)
+					{
+						if ($this->request->data['User']['id'])
+						{
+							//update
+							$this->Course->Attending->User->create($this->request->data['User']);
+							if ($this->Course->Attending->User->save())
+							{
+								$this->request->data['Course']['poc_id'] = $this->Course->Attending->User->getLastInsertId();
+							}
+						}
+						else
+						{
+							//new user
+							unset($this->request->data['User']['id']);
+							$this->request->data['User']['agency_id'] = $this->request->data['Course']['agency_id'];
+							$this->Course->Attending->User->create($this->request->data['User']);
+							if ($this->Course->Attending->User->save())
+							{
+								$this->request->data['Course']['poc_id'] = $this->Course->Attending->User->getLastInsertId();
+							}
+						}
+					}
+
+					if ($this->request->data['Course']['poc_id'] != 1)
+					{
+						$newcourse = $this->Session->read('newcourse');
+						$newcourse['Hosting'][] = $this->request->data['Course'];
+						$this->Session->write('newcourse', $newcourse);
+						$this->redirect(array('action'=>'add', 6));
+					}
+
+					//die(pr($this->request->data));
+				break;
+
+				case 4:
+					$newcourse = $this->Session->read('newcourse.info');
+					$newcourse['shipping_location_id'] = $this->request->data['Course']['shipping_location'];
+					$this->Session->write('newcourse.info', $newcourse);
+					$this->redirect(array('action'=>'add', 5));
+				break;
+
+				case 5:
+					$newcourse = $this->Session->read('newcourse.info');
+					$newcourse['location_id'] = $this->request->data['Course']['location'];
+					$this->Session->write('newcourse.info', $newcourse);
+					$this->redirect(array('action'=>'add', 7));
+				break;
+
+
+
+
+				case 9:
+
+					if ($this->Course->validates($this->request->data))
+					{
+						if ($this->Course->save($this->request->data))
+						{
+							$this->Session->setFlash('Course created.', 'notices/success');
+							$this->redirect(array('action'=>'view', $this->Course->getLastInsertId()));
+						}
+						else
+						{
+							$this->Session->setFlash('Error saving course.', 'notices/error');
+						}
+					}
+					else
+						$this->Session->setFlash('Please correct the validation errors below to continue.', 'notices/notice');
+				break;
+			}
+		}
+		//</editor-fold>
+
+		switch($step)
+		{
+			case 1:
+				$this->Session->write('newcourse', array());
+				$this->set('courseTypes', $this->Course->CourseType->find('list'));
+				$conf = $this->Course->Conference->find('list');
+				$conf[0] = 'Not a conference class';
+				$this->set('conferences', $conf);
+				$this->set('fundings', $this->Course->Funding->find('list'));
+			break;
+
+			case 3:
+				$this->set('ct', $this->Course->CourseType->read(null, $this->Session->read('newcourse.info.course_type_id')));
+				$this->set('statuses', $this->Course->Status->find('list'));
+			break;
+
+			case 4:
+			case 5:
+				$locations = array();
+				$newcourse = $this->Session->read('newcourse');
+				foreach($newcourse['Hosting'] as $host)
+				{
+					$this->Course->Location->contain(array(
+						'City',
+						'State'
+					));
+					$locations[$host['agency']] = $this->Course->Location->findAllByAgencyId($host['agency_id']);
+				}
+
+				$this->set('locations', $locations);
+			break;
+
+			case 8:
+				$newcourse = $this->Session->read('newcourse');
+				foreach($newcourse['Course'] as $course)
+				{
+					$c = array_merge($newcourse['info'], $course);
+					$c['status_id']=1;
+
+					$this->Course->create($c);
+					if ($this->Course->save())
+					{
+						$cid = $this->Course->getLastInsertId();
+						foreach($newcourse['Hosting'] as $host)
+						{
+							$hosting = array(
+								'agency_id'=>$host['agency_id'],
+								'seats'=>$host['seats'],
+								'status_id'=>$host['status_id'],
+								'course_id'=>$cid
+							);
+							$this->Course->Hosting->create($hosting);
+							$this->Course->Hosting->save();
+
+							$contact = array(
+								'user_id'=>$host['poc_id'],
+								'course_id'=>$cid,
+								'status_id'=>$host['contact_status_id']
+							);
+							$this->Course->Contact->create($contact);
+							$this->Course->Contact->save();
+						}
+					}
+					else
+						die('course create error');
+				}
+
+				$this->redirect(array('action'=>'index','pending'));
+			break;
+		}
+
+		$this->render('Courses'.DS.'pages'.DS.'add_steps'.DS.$step);
+	}
+
+	public function admin_quickAdd()
 	{
 		if ($this->request->is('post') || $this->request->is('put'))
 		{
