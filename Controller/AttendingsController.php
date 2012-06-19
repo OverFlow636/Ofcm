@@ -147,7 +147,7 @@ class AttendingsController extends OfcmAppController
 
 							$args = array(
 								'email_template_id'=>2,
-								'sendTo'=>'jan@alerrt.org',//'erin@alerrt.org',
+								'sendTo'=>'erin@alerrt.org',
 								'replyTo'=>$user['User']['email']
 							);
 							$this->_sendTemplateEmail($args, $data);
