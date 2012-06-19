@@ -91,6 +91,11 @@ class AttendingsController extends OfcmAppController
 				{
 					if ($this->Attending->User->saveAll($this->request->data, array('validate'=>'first')))
 					{
+						$this->Attending->User->contain(array(
+							'Agency'
+						));
+						$user = $this->Attending->User->read(null, $extra);
+
 						$a['Attending'] = array(
 							'user_id'=>$extra,
 							'course_id'=>$cid,
@@ -105,7 +110,10 @@ class AttendingsController extends OfcmAppController
 						));
 
 						$this->Attending->Course->contain(array(
-							'CourseType'
+							'CourseType',
+							'Status',
+							'Location.City',
+							'Location.State'
 						));
 						$course = $this->Attending->Course->read(null, $cid);
 
@@ -121,39 +129,39 @@ class AttendingsController extends OfcmAppController
 						{
 							$this->Session->setFlash('The course application has been submitted, you will be notified if you are approved or not.', 'notices/success');
 
-							/*$this->Attending->Course->contain(array('Location.City','Location.State', 'CourseType', 'Status'));
-							$c = $this->Attending->Course->read();
-							$this->set('Course', $c);
-
 							$this->Attending->User->contain(array(
 								'Phone',
 								'Agency'
 							));
 							$au = $this->Attending->User->read(null, $this->Auth->user('id'));
-							$this->set('AuthUser', $au);
 
 							$data = array(
 								'AuthUser'		=> $au,
-								'AppliedCourse'	=> $c
+								'AppliedCourse'	=> $course
 							);
 
 							if ($extra != $this->Auth->user('id'))
-							{
-								$this->Attending->User->contain(array(
-									'Phone'
-								));
-								$data['AppliedUser'] = $this->Attending->User->read(null, $extra);
-							}
+								$data['AppliedUser'] = $user;
 							else
 								$data['AppliedUser'] = $au;
 
-							$this->HLR->dispatch('UserApplicationSubmitted', $data);*/
+							$args = array(
+								'email_template_id'=>2,
+								'sendTo'=>'jan@alerrt.org',//'erin@alerrt.org',
+								'replyTo'=>$user['User']['email']
+							);
+							$this->_sendTemplateEmail($args, $data);
 
 							$this->redirect('/Profile');
 						}
 						else
 						{
 							$this->Session->setFlash('Error applying you to the course, Administrator has been emailed about the problem.', 'notices/error');
+							$args = array(
+								'email_template_id'=>15,
+								'sendTo'=>'jan@alerrt.org'
+							);
+							$this->_sendTemplateEmail($args, array('error'=>'Course application failed to save. '.var_dump($a)));
 							$this->redirect('/');
 						}
 					}
