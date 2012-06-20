@@ -638,7 +638,7 @@ class AttendingsController extends OfcmAppController
 		));
 		$students = $this->Attending->find('all', array(
 			'conditions'=>array(
-				'Attending.id'=>$id,
+				'Attending.course_id'=>$id,
 				'Attending.status_id'=>array(3,4,5,8,16,17,18,22,23,26,25)
 			)
 		));
