@@ -26,9 +26,10 @@ class InstructorsController extends OfcmAppController
 	{
 		$this->Instructor->contain(array(
 			'Tier',
-			'Status'
+			'Status',
+			'User'
 		));
-		$this->set('instructors', $this->Instructor->find('all', array('order'=>'created DESC', 'limit'=>10)));
+		$this->set('instructors', $this->Instructor->find('all', array('order'=>'Instructor.created DESC')));
 	}
 
 	public function admin_dataTable($type='sindex', $id=null)
