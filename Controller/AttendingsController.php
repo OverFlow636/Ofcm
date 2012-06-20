@@ -631,16 +631,17 @@ class AttendingsController extends OfcmAppController
 				)
 			),
 			'User.Agency',
-			'Status'=>array(
-				'conditions'=>array(
-					'Status.id'=>array(3,4,5,8,16,17,18,22,23,26)
-				)
-			),
+			'Status',
 			'User.HomeAddress.City',
 			'User.HomeAddress.State',
 			'Course.CourseType'
 		));
-		$students = $this->Attending->findAllByCourseId($id);
+		$students = $this->Attending->find('all', array(
+			'conditions'=>array(
+				'id'=>$id,
+				'status_id'=>array(3,4,5,8,16,17,18,22,23,26,25)
+			)
+		));
 
 		if ($type=='BJA')
 		{
