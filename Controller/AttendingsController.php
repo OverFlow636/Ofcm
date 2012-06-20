@@ -658,7 +658,7 @@ class AttendingsController extends OfcmAppController
 				echo '"'.$user['User']['first_name']."\"\n";
 			}
 
-			foreach($instructors as $user)
+			/*foreach($instructors as $user)
 			{
 				echo '"'.$user['User']['HomeAddress']['addr1'].'",';
 				echo '"'.$user['Course']['location_description'].'",';
@@ -666,7 +666,7 @@ class AttendingsController extends OfcmAppController
 				echo '"'.date('m/d/y',strtotime($user['Course']['startdate'])). ' - ' . date('m/d/y',strtotime($user['Course']['enddate'])).'",';
 				echo '"'.$user['User']['last_name'].'",';
 				echo '"'.$user['User']['first_name']."\"\n";
-			}
+			}*/
 			die();
 		}
 
@@ -686,7 +686,7 @@ class AttendingsController extends OfcmAppController
 				echo '"'.$user['Status']['status']."\"\n";
 				//echo '"'.$user['User']['first_name']."\"\n";
 			}
-			foreach($instructors as $user)
+			/*foreach($instructors as $user)
 			{
 				echo '"'.$user['User']['first_name'].'",';
 				echo '"'.$user['User']['last_name'].'",';
@@ -696,7 +696,7 @@ class AttendingsController extends OfcmAppController
 				echo '"'.$user['User']['pid'].'",';
 				echo '"'.$user['Status']['status']."\"\n";
 				//echo '"'.$user['User']['first_name']."\"\n";
-			}
+			}*/
 			die();
 		}
 	}
