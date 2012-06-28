@@ -436,7 +436,17 @@ class CoursesController extends OfcmAppController
 						'course_id'=>$id,
 						'or'=>array(
 							array('status_id'=>3),
-							array('status_id'=>26)
+							array('status_id'=>26),
+							array('status_id'=>4),
+							array('status_id'=>5),
+							array('status_id'=>8),
+							array('status_id'=>15),
+							array('status_id'=>16),
+							array('status_id'=>17),
+							array('status_id'=>18),
+							array('status_id'=>19),
+							array('status_id'=>22),
+							array('status_id'=>23)
 						)
 					)
 				));
@@ -481,6 +491,19 @@ class CoursesController extends OfcmAppController
 				$this->render('Courses/pages/'.$page);
 			break;
 			//</editor-fold>
+
+			case 'notes':
+
+				$this->Course->contain(array(
+					'Note.User'=>array(
+						'order'=>'created ASC'
+					)
+				));
+				$course = $this->Course->read(null, $id);
+
+				$this->set('course', $course);
+				$this->render('Courses/pages/'.$page);
+			break;
 		}
 	}
 
