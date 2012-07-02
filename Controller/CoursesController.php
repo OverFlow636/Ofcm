@@ -1064,7 +1064,8 @@ class CoursesController extends OfcmAppController
 		$this->set('courses', $this->Course->find('all', array(
 			'conditions'=>array(
 				'startdate > now()',
-				'status_id'=>10
+				'status_id'=>10,
+				'conference_id'=>null
 			)
 		)));
 	}

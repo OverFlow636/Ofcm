@@ -220,6 +220,7 @@ class InstructingsController extends OfcmAppController
 			$this->request->data['Instructing']['user_id'] = $this->Auth->user('id');
 			$this->request->data['Instructing']['instructor_id'] = $inst['Instructor']['id'];
 			$this->request->data['Instructing']['tier_id'] = $inst['Instructor']['tier_id'];
+			$this->request->data['Instructing']['status_id'] = 1;
 
 			if ($this->Instructing->save($this->request->data))
 			{
