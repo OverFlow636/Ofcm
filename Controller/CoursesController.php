@@ -838,7 +838,7 @@ class CoursesController extends OfcmAppController
 					// other = contact_user_id
 					if ($this->request->data['Course']['poc_id'] == 1)
 					{
-						if ($this->request->data['User']['id'])
+						if ($this->request->data['User']['id']>0)
 						{
 							//update
 							$this->Course->Attending->User->create($this->request->data['User']);
@@ -1065,7 +1065,7 @@ class CoursesController extends OfcmAppController
 			'conditions'=>array(
 				'startdate > now()',
 				'status_id'=>10,
-				'conference_id'=>null
+				'conference_id'=>0
 			)
 		)));
 	}
