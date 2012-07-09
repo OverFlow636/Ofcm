@@ -388,7 +388,7 @@ class CoursesController extends OfcmAppController
 			break;
 			//</editor-fold>
 
-			//<editor-fold defaultstate="collapsed" desc="Dashboard">
+			//<editor-fold defaultstate="collapsed" desc="Students">
 			case 'students':
 				$this->Course->contain(array(
 					'Attending.Status',
@@ -402,6 +402,38 @@ class CoursesController extends OfcmAppController
 				));
 				$c = $this->Course->read(null, $id);
 				$this->set('course', $c);
+
+
+				$clist = $this->Course->find('all', array(
+					'joins'=>array(
+						array(
+							'table'=>'hostings',
+							'alias'=>'Hosting',
+							'type'=>'LEFT',
+							'conditions'=>array(
+								'Hosting.course_id = Course.id'
+							)
+						),
+						array(
+							'table'=>'course_types',
+							'alias'=>'CourseType',
+							'type'=>'LEFT',
+							'conditions'=>array(
+								'CourseType.id = Course.course_type_id'
+							)
+						)
+					),
+					'conditions'=>array(
+						'Hosting.agency_id'=>1,
+						'Course.startdate > NOW()'
+					),
+					'fields'=>'*'
+				));
+				$list = array();
+				foreach($clist as $course)
+					$list[$course['Course']['id']] = $course['CourseType']['shortname']. ' '. $course['Course']['startdate'];
+				$this->set('smcourses', $list);
+
 				$this->render('Courses/pages/'.$page);
 			break;
 			//</editor-fold>

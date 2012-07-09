@@ -497,6 +497,8 @@ class AttendingsController extends OfcmAppController
 					case 'I': $this->Attending->saveField('status_id', 8); break;
 
 					case 'R': $this->Attending->delete(); break;
+
+					case 'M': $this->Attending->saveField('course_id', $this->request->data['Attending']['smcourses_id']); break;
 				}
 			}
 
