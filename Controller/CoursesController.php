@@ -320,23 +320,56 @@ class CoursesController extends OfcmAppController
 
 				$this->Course->contain(array(
 					'CourseType',
-					'Conference.id',
-					'Conference.name',
 					'Status',
 					'Funding',
 					'Location.City',
 					'Location.State',
 					'ShippingLocation.City',
 					'ShippingLocation.State',
-					'Hosting.Agency.id',
+					'Conference.id',
+					'Conference.name',
+					/*Hosting.Agency.id',
 					'Hosting.Agency.name',
 					'Contact.User',
 					'Instructing'=>array(
 						'conditions'=>array(
 							'status_id'=>3
 						)
-					)
+					)*/
 				));
+
+				$this->set('hostings', $this->Course->Hosting->find('all',array(
+					'conditions'=>array(
+						'course_id'=>$id
+					),
+					'contain'=>array(
+						'Agency.name'
+					)
+				)));
+				$this->set('contacts', $this->Course->Contact->find('all',array(
+					'conditions'=>array(
+						'course_id'=>$id
+					),
+					'contain'=>array(
+						'User'
+					)
+				)));
+
+				$this->set('instructors', $this->Course->Instructing->find('all',array(
+					'conditions'=>array(
+						'course_id'=>$id,
+						'Instructing.status_id'=>3
+					),
+					'contain'=>array(
+						'Tier',
+						'User.first_name',
+						'User.last_name',
+						'Instructor.Tier.short'
+					)
+				)));
+
+
+
 				$c = $this->Course->read(null, $id);
 
 				$this->Course->Instructing->contain(array(
@@ -806,12 +839,9 @@ class CoursesController extends OfcmAppController
 			$this->redirect(array('action'=>'view', $id));
 		}
 
-		$this->fire('Plugin.Ofcm.adminView_beforeRead');
-
 		$c = $this->Course->read(null, $id);
 		$this->set('course', $c);
 		$this->request->data = $c;
-
 
 		$this->set('courseTypes', $this->Course->CourseType->find('list'));
 		$conf = $this->Course->Conference->find('list');
