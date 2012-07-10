@@ -59,6 +59,18 @@ class CoursesController extends OfcmAppController
 		$conditions = array();
 		switch($type)
 		{
+			case 'funding':
+				$conditions[] = array('Course.funding_id'=>$extra);
+
+				$aColumns = array(
+					'Course.id',
+					'Course.startdate',
+					'CourseType.shortname',
+					'Course.location_description'
+				);
+				$type = 'admin_index';
+			break;
+
 			case 'upcoming':
 				$conditions[] = 'Course.startdate > NOW()';
 				$conditions[] = array('Course.conference_id'=>0);
