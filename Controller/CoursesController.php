@@ -947,6 +947,17 @@ class CoursesController extends OfcmAppController
 
 				case 4:
 					$newcourse = $this->Session->read('newcourse.info');
+
+					if ($this->request->data['Course']['shipping_location'] == 0)
+					{
+						$name = $this->request->data['ShippingLocation']['name'];
+						$result = $this->Usps->process($this->request->data['ShippingLocation']['addr1'], $this->request->data['ShippingLocation']['zip5'], $this->request->data['ShippingLocation']['addr2']);
+						$this->loadModel('Location');
+						$result['agency_id'] = $this->Session->read('newcourse.Hosting.0.agency_id');
+						$result['name']=$name;
+						$this->request->data['Course']['shipping_location'] = $this->Location->process($result, $this);
+					}
+
 					$newcourse['shipping_location_id'] = $this->request->data['Course']['shipping_location'];
 					$this->Session->write('newcourse.info', $newcourse);
 					$this->redirect(array('action'=>'add', 5));
@@ -954,6 +965,17 @@ class CoursesController extends OfcmAppController
 
 				case 5:
 					$newcourse = $this->Session->read('newcourse.info');
+
+					if ($this->request->data['Course']['location'] == 0)
+					{
+						$name = $this->request->data['Location']['name'];
+						$result = $this->Usps->process($this->request->data['Location']['addr1'], $this->request->data['Location']['zip5'], $this->request->data['Location']['addr2']);
+						$this->loadModel('Location');
+						$result['agency_id'] = $this->Session->read('newcourse.Hosting.0.agency_id');
+						$result['name']=$name;
+						$this->request->data['Course']['location'] = $this->Location->process($result, $this);
+					}
+
 					$newcourse['location_id'] = $this->request->data['Course']['location'];
 					$this->Session->write('newcourse.info', $newcourse);
 					$this->redirect(array('action'=>'add', 7));
