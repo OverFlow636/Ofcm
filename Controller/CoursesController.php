@@ -486,7 +486,7 @@ class CoursesController extends OfcmAppController
 			//<editor-fold defaultstate="collapsed" desc="Hosting">
 			case 'hosting':
 				$this->Course->contain(array(
-					'Hosting.Agency',
+					'Hosting.Agency.name',
 					'Hosting.Status'
 				));
 				$c = $this->Course->read(null, $id);
@@ -1121,6 +1121,14 @@ class CoursesController extends OfcmAppController
 		$this->request->data = $this->Course->read(null, $id);
 	}
 
+	public function admin_ajax_iclose($id = null, $action = 'close')
+	{
+		$this->Course->id = $id;
+		if ($this->Course->saveField('iclosed', $action=='close'))
+			die('Saved!');
+		else
+			die('Error while changing');
+	}
 
 	/** Instructor functions **/
 
