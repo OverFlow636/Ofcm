@@ -157,7 +157,8 @@ class CoursesController extends OfcmAppController
 						case 1: $order = array('Course.startdate'=>$_GET['sSortDir_0']); break;
 						case 2: $order = array('Course.course_type_id'=>$_GET['sSortDir_0']); break;
 						case 3: $order = array('Course.location_description'=>$_GET['sSortDir_0']); break;
-						case 4: $order = array('Course.status_id'=>$_GET['sSortDir_0']); break;
+						case 4: $order = array('Course.iclosed'=>$_GET['sSortDir_0']); break;
+						case 5: $order = array('Course.attending_count'=>$_GET['sSortDir_0']); break;
 					}
 				break;
 
