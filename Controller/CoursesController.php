@@ -86,6 +86,30 @@ class CoursesController extends OfcmAppController
 				);
 			break;
 
+			case 'past':
+				$conditions[] = array('Course.startdate <= NOW()', 'Course.status_id'=>10);
+				$aColumns = array(
+					'Course.id',
+					'Course.startdate',
+					'CourseType.shortname',
+					'Course.location_description'
+				);
+				$type = 'admin_index';
+			break;
+
+			case 'aupcoming':
+				$conditions[] = array('Course.startdate > NOW()', 'Course.status_id'=>10);
+
+				$aColumns = array(
+					'Course.id',
+					'Course.startdate',
+					'CourseType.shortname',
+					'Course.location_description'
+				);
+				$type = 'admin_index';
+			break;
+
+
 			case 'agency':
 				$courses = $this->Course->Hosting->findAllByAgencyId($extra);
 				$ids = Set::extract('{n}/Hosting/course_id', $courses);
