@@ -62,34 +62,40 @@ class Course extends OfcmAppModel
 			$cal = $gcal->getCal();
 
 			$gcal_id = $this->field('gcal_id');
-			if ($created || !$gcal_id)
-				$event = $gcal->getNewEvent();
-			else
-				$event = $gcal->getNewEvent($gcal_id);
-
-			$desc = $this->getDescription($this->id);
-			$event->setSummary($desc['title']);
-			$event->setDescription($desc['desc']);
-			$event->setLocation($desc['loc']);
-
-			$start = new EventDateTime();
-			$start->setDate(date('Y-m-d', strtotime($desc['start'])));
-			$event->setStart($start);
-
-			$end = new EventDateTime();
-			$end->setDate(date('Y-m-d', strtotime($desc['end'].'+1 day')));
-			$event->setEnd($end);
-
-			$event->attendees = array();
-
-
-			if ($created || !$gcal_id)
+			if ($gcal_id != "-1")
 			{
-				$event = $cal->events->insert('primary', $event);
-				$this->saveField('gcal_id', $event['id']);
+				if ($created || !$gcal_id)
+					$event = $gcal->getNewEvent();
+				else
+					$event = $gcal->getNewEvent($gcal_id);
+
+				$desc = $this->getDescription($this->id);
+				$event->setSummary($desc['title']);
+				$event->setDescription($desc['desc']);
+				$event->setLocation($desc['loc']);
+
+				$start = new EventDateTime();
+				$start->setDate(date('Y-m-d', strtotime($desc['start'])));
+				$event->setStart($start);
+
+				$end = new EventDateTime();
+				$end->setDate(date('Y-m-d', strtotime($desc['end'].'+1 day')));
+				$event->setEnd($end);
+
+				$event->attendees = array();
+
+
+				if ($created || !$gcal_id)
+				{
+					$event = $cal->events->insert('primary', $event);
+					if (!empty($event['id']))
+						$this->saveField('gcal_id', $event['id']);
+					else
+						$this->saveField('gcal_id', "-1");
+				}
+				else
+					$cal->events->update('primary', $gcal_id, $event);
 			}
-			else
-				$cal->events->update('primary', $gcal_id, $event);
 		}
 	}
 
