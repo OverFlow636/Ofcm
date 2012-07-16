@@ -1155,6 +1155,22 @@ class CoursesController extends OfcmAppController
 			die('Error while changing');
 	}
 
+	public function admin_calendartest($id)
+	{
+		//$cals = $this->Gcal->addEvent();//getCal()->calendarList->listCalendarList();
+
+		//die(var_dump($cals)); //l6a2e7mhd4hhp3cds2df6bck80
+
+		//$cals = $this->Gcal->updateEvent('l6a2e7mhd4hhp3cds2df6bck80');
+		//die(var_dump($cals));
+
+		$this->Course->save(array('id'=>$id, 'iclosed'=>true));
+
+
+
+		die('done');
+	}
+
 	/** Instructor functions **/
 
 	public function instructor_view($id = null)
