@@ -207,13 +207,10 @@ class Course extends OfcmAppModel
 		$desc .= "\n";
 
 
-		$desc .= "\n";
-		$desc .= "\n";
-		$desc .= "\n";
-
 		//echo '<pre>'.$desc.'</pre>';
-
-		$title = "{$data['CourseType']['shortname']} in {$data['Course']['location_description']}";
+		$title = "{$data['CourseType']['shortname']} in {$data['Course']['location_description']} from {$data['Fudning']['name']}";
+		if ($data['Course']['status_id'] != 10)
+			$title = $data['Status']['status'].': '.$title;
 
 		//pr($data);
 
