@@ -1,6 +1,6 @@
 <?php
 App::uses('OfcmAppController', 'Ofcm.Controller');
-App::uses('CakeEmail', 'network/Email');
+App::uses('OutlookEmail', 'Custom');
 /**
  * Courses Controller
  *
@@ -961,6 +961,9 @@ class CoursesController extends OfcmAppController
 
 					if ($this->request->data['Course']['poc_id'] != 1)
 					{
+						$u = $this->Course->Attending->User->read(null, $this->request->data['Course']['poc_id']);
+						$this->request->data['Course']['poc'] = $u['User']['name'];
+
 						$newcourse = $this->Session->read('newcourse');
 						$newcourse['Hosting'][] = $this->request->data['Course'];
 						$this->Session->write('newcourse', $newcourse);
@@ -1016,7 +1019,9 @@ class CoursesController extends OfcmAppController
 						if ($this->Course->save($this->request->data))
 						{
 							$this->Session->setFlash('Course created.', 'notices/success');
-							$this->redirect(array('action'=>'view', $this->Course->getLastInsertId()));
+							$this->Session->write('newcourse', $this->Course->getLastInsertId());
+							$this->redirect(array('action'=>'add', 9));
+							//$this->redirect(array('action'=>'view', $this->Course->getLastInsertId()));
 						}
 						else
 						{
@@ -1033,17 +1038,17 @@ class CoursesController extends OfcmAppController
 		switch($step)
 		{
 			case 1:
-				$this->Session->write('newcourse', array());
-				$this->set('courseTypes', $this->Course->CourseType->find('list'));
-				$conf = $this->Course->Conference->find('list');
-				$conf[0] = 'Not a conference class';
-				$this->set('conferences', $conf);
-				$this->set('fundings', $this->Course->Funding->find('list'));
+				if ($this->Session->check('newcourse.info'))
+					$this->request->data = array('Course'=>$this->Session->read('newcourse.info'));
+			break;
+
+			case 2:
+				if ($this->Session->check('newcourse'))
+					$this->request->data = $this->Session->read('newcourse');
 			break;
 
 			case 3:
 				$this->set('ct', $this->Course->CourseType->read(null, $this->Session->read('newcourse.info.course_type_id')));
-				$this->set('statuses', $this->Course->Status->find('list'));
 			break;
 
 			case 4:
@@ -1060,6 +1065,14 @@ class CoursesController extends OfcmAppController
 				}
 
 				$this->set('locations', $locations);
+			break;
+
+			case 7:
+				$this->Course->Location->contain(array('State', 'City'));
+				$this->set('shippingLocation', $this->Course->Location->read(null, $this->Session->read('newcourse.info.shipping_location_id')));
+
+				$this->Course->Location->contain(array('State', 'City'));
+				$this->set('trainingLocation', $this->Course->Location->read(null, $this->Session->read('newcourse.info.location_id')));
 			break;
 
 			case 8:
@@ -1099,8 +1112,26 @@ class CoursesController extends OfcmAppController
 
 				$this->redirect(array('action'=>'index','pending'));
 			break;
-		}
 
+			case 9:
+				$id = $this->Session->read('newcourse');
+				$id = 1024;
+
+				$this->Course->contain(array(
+					'Contact.User'
+				));
+				$this->set('data', $this->Course->read(null, $id));
+
+			break;
+		}
+		$this->set('courseTypes', $this->Course->CourseType->find('list'));
+		$conf = $this->Course->Conference->find('list');
+		$conf[0] = 'Not a conference class';
+		$this->set('conferences', $conf);
+		$this->set('fundings', $this->Course->Funding->find('list'));
+		$this->set('statuses', $this->Course->Status->find('list'));
+
+		$this->set('step', $step);
 		$this->render('Courses'.DS.'pages'.DS.'add_steps'.DS.$step);
 	}
 
@@ -1164,7 +1195,80 @@ class CoursesController extends OfcmAppController
 		//$cals = $this->Gcal->updateEvent('l6a2e7mhd4hhp3cds2df6bck80');
 		//die(var_dump($cals));
 
-		$this->Course->save(array('id'=>$id, 'iclosed'=>true));
+		$meeting_date = "2012-07-21 13:40:00";
+		$meetingstamp = STRTOTIME($meeting_date . " UTC");
+		$dtstart= GMDATE("Ymd\THis\Z",$meetingstamp);
+		$dtend= GMDATE("Ymd\THis\Z",$meetingstamp+3600);
+		$todaystamp = GMDATE("Ymd\THis\Z");
+
+		//Create unique identifier
+		$cal_uid = DATE('Ymd').'T'.DATE('His')."-".RAND()."@mydomain.com";
+
+		$desc = $this->Course->getDescription($id);
+
+
+$ics= 'BEGIN:VCALENDAR
+METHOD:REQUEST
+PRODID:Microsoft Exchange Server 2007
+VERSION:2.0
+BEGIN:VTIMEZONE
+TZID:Central Standard Time
+BEGIN:STANDARD
+DTSTART:16010101T020000
+TZOFFSETFROM:-0500
+TZOFFSETTO:-0600
+RRULE:FREQ=YEARLY;INTERVAL=1;BYDAY=1SU;BYMONTH=11
+END:STANDARD
+BEGIN:DAYLIGHT
+DTSTART:16010101T020000
+TZOFFSETFROM:-0600
+TZOFFSETTO:-0500
+RRULE:FREQ=YEARLY;INTERVAL=1;BYDAY=2SU;BYMONTH=3
+END:DAYLIGHT
+END:VTIMEZONE
+BEGIN:VEVENT
+DESCRIPTION;LANGUAGE=en-US:'.$desc['desc'].'
+SUMMARY;LANGUAGE=en-US:'.$desc['title'].'
+DTSTART;TZID=Central Standard Time:20120716T000000
+DTEND;TZID=Central Standard Time:20120718T000000
+UID:'.$cal_uid.'
+CLASS:PUBLIC
+PRIORITY:5
+DTSTAMP:'.$todaystamp.'
+TRANSP:OPAQUE
+STATUS:CONFIRMED
+SEQUENCE:2
+LOCATION;LANGUAGE=en-US:New York\, NY
+X-MICROSOFT-CDO-APPT-SEQUENCE:2
+X-MICROSOFT-CDO-OWNERAPPTID:2110183705
+X-MICROSOFT-CDO-BUSYSTATUS:FREE
+X-MICROSOFT-CDO-INTENDEDSTATUS:FREE
+X-MICROSOFT-CDO-ALLDAYEVENT:TRUE
+X-MICROSOFT-CDO-IMPORTANCE:1
+X-MICROSOFT-CDO-INSTTYPE:0
+BEGIN:VALARM
+ACTION:DISPLAY
+DESCRIPTION:REMINDER
+TRIGGER;RELATED=START:-PT18H
+END:VALARM
+END:VEVENT
+END:VCALENDAR';
+
+		file_put_contents('/tmp/meeting.ics', $ics);
+
+
+		$email = new OutlookEmail('smtp');
+		$email->from(array('noreply@alerrt.org' => 'No Reply'))
+			->to('alerrt@txstate.edu')
+			->subject($desc['title'])
+			->attachments(array(
+				'meeting.ics'=>array(
+					'file'=>'/tmp/meeting.ics',
+					'mimetype'=>'text/calendar; charset="utf-8"; method=REQUEST',
+					'contentDisposition'=>false
+				)
+			))
+			->send($desc['desc']);
 
 
 

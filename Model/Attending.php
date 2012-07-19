@@ -24,7 +24,7 @@ class Attending extends OfcmAppModel
 		'Course'=>array(
 			'className'=>'Ofcm.Course',
 			'counterCache'=>true,
-			'counterScope'=>array('Attending.status_id'=>array(3,4,5,8,12,13,16,17,18,19,22,23))
+			//'counterScope'=>array('Attending.status_id'=>array(3,4,5,8,12,13,16,17,18,19,22,23))
 		),
 		'Conference'=>array(
 			'counterCache'=>true
