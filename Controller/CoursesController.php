@@ -338,6 +338,17 @@ class CoursesController extends OfcmAppController
 		if ($this->request->is('ajax'))
 			$this->layout = 'ajax';
 
+		$this->Course->id = $id;
+		$ac = $this->Course->Attending->find('count', array(
+			'conditions'=>array(
+				'course_id'=>$id,
+				'status_id'=>array(3,4,5,8,12,13,16,17,18,19,22,23)
+			)
+		));
+
+		if ($ac != $this->Course->field('approved_count'))
+			$this->Course->saveField('approved_count', $ac);
+
 		switch($page)
 		{
 			//<editor-fold defaultstate="collapsed" desc="View">
