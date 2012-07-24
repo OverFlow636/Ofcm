@@ -55,6 +55,13 @@ class InstructingsController extends OfcmAppController
 		{
 			case 'user':
 				$conditions['Instructing.user_id'] = $courseid;
+				$set = true;
+
+			case 'instructor':
+				if (!isset($set))
+					$conditions['Instructing.instructor_id'] = $courseid;
+				$type='user';
+
 				$aColumns = array(
 					'CourseType.shortname',
 					'Course.startdate',
@@ -76,7 +83,6 @@ class InstructingsController extends OfcmAppController
 					'conditions'=>array(
 						'CourseType.id = Course.course_type_id'
 					));
-
 			break;
 
 			case 'datatable':

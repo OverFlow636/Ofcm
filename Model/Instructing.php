@@ -15,7 +15,11 @@ class Instructing extends OfcmAppModel
 
 	public $belongsTo = array(
 		'Ofum.User',
-		'Ofcm.Instructor',
+		'Instructor'=>array(
+			'className'=>'Ofcm.Instructor',
+			'counterCache'=>true,
+			'counterScope'=>array('Instructing.status_id'=>3)
+		),
 		'Ofcm.Course',
 		'Status',
 		'Tier',

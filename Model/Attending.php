@@ -20,7 +20,11 @@ class Attending extends OfcmAppModel
 	);
 
 	public $belongsTo = array(
-		'Ofum.User',
+		'User'=>array(
+			'className'=>'Ofum.User',
+			'counterCache'=>true,
+			'counterScope'=>array('Attending.status_id'=>array(3,4,5,8,12,13,16,17,18,19,22,23))
+		),
 		'Course'=>array(
 			'className'=>'Ofcm.Course',
 			'counterCache'=>true,

@@ -10,7 +10,8 @@ class InstructorsController extends OfcmAppController
 	public function instructor_testRequirements($id = null)
 	{
 		$this->Instructor->contain(array(
-			'User'
+			'User',
+			'InstructorHistory'
 		));
 		$data = $this->Instructor->read(null, $id);
 		$this->set('instructor', $data);
@@ -59,6 +60,12 @@ class InstructorsController extends OfcmAppController
 				'type'=>'LEFT',
 				'conditions'=>array(
 					'Tier.id = Instructor.tier_id'
+			)),array(
+				'table'=>'statuses',
+				'alias'=>'Status',
+				'type'=>'LEFT',
+				'conditions'=>array(
+					'Status.id = Instructor.status_id'
 			))
 		);
 		switch($type)
@@ -75,6 +82,14 @@ class InstructorsController extends OfcmAppController
 
 			case 'agency':
 				$conditions['User.agency_id'] = $id;
+			break;
+
+			case 'admin_index':
+
+			break;
+
+			case 'tier':
+				$conditions['Instructor.tier_id'] = $id;
 			break;
 		}
 
@@ -104,6 +119,25 @@ class InstructorsController extends OfcmAppController
 						case 1: $order = array('User.last_name'=>$_GET['sSortDir_0']); break;
 						case 2: $order = array('Agency.name'=>$_GET['sSortDir_0']); break;
 						case 3: $order = array('Tier.id'=>$_GET['sSortDir_0']); break;
+					}
+				break;
+
+				case 'admin_index':
+					switch($_GET['iSortCol_0'])
+					{
+						case 0: $order = array('User.last_name'=>$_GET['sSortDir_0']); break;
+						case 1: $order = array('Agency.name'=>$_GET['sSortDir_0']); break;
+						case 2: $order = array('Tier.id'=>$_GET['sSortDir_0']); break;
+						case 3: $order = array('Status.id'=>$_GET['sSortDir_0']); break;
+					}
+				break;
+
+				case 'tier':
+					switch($_GET['iSortCol_0'])
+					{
+						case 0: $order = array('User.last_name'=>$_GET['sSortDir_0']); break;
+						case 1: $order = array('Agency.name'=>$_GET['sSortDir_0']); break;
+						case 2: $order = array('Status.status'=>$_GET['sSortDir_0']); break;
 					}
 				break;
 			}
@@ -136,7 +170,8 @@ class InstructorsController extends OfcmAppController
 			'order'=>$order,
 			'limit'=>$limit,
 			'offset'=>$offset,
-			'joins'=>$joins
+			'joins'=>$joins,
+			'fields'=>'*'
 		));
 
 		//echo "/* ".print_r($order, true).' */';
@@ -146,4 +181,116 @@ class InstructorsController extends OfcmAppController
 		$this->render('Instructors/tables'.DS.$type);
 	}
 
+	public function admin_view($id = null, $page = 'view')
+	{
+		if ($id == null)
+			die('no');
+
+		if ($this->request->is('ajax'))
+			$this->layout = 'ajax';
+
+		switch($page)
+		{
+			//<editor-fold defaultstate="collapsed" desc="View">
+			case 'view':
+
+				$this->Instructor->contain(array(
+					'User.Agency',
+					'Status',
+					'Tier',
+					'InstructorHistory'
+				));
+				$this->set('instructor', $this->Instructor->read(null, $id));
+
+				$this->render('admin_view');
+			break;
+		//</editor-fold>
+
+			//<editor-fold defaultstate="collapsed" desc="Tier Map">
+			case 'tiermap':
+
+				$this->Instructor->contain(array(
+					'User.Agency',
+					'InstructorHistory'
+				));
+				$data = $this->Instructor->read(null, $id);
+				$this->set('instructor', $data);
+
+				$this->set('results', $this->Instructor->Tier->TierRequirement->test($data));
+				$this->Instructor->Tier->contain(array(
+					'TierRequirement'
+				));
+				$this->set('tiers', $this->Instructor->Tier->find('all'));
+				$this->render('Instructors/pages/'.$page);
+			break;
+			//</editor-fold>
+
+			//<editor-fold defaultstate="collapsed" desc="Dashboard">
+			case 'dashboard':
+
+				$recent = $this->Instructor->Instructing->find('all', array(
+					'conditions'=>array(
+						'instructor_id'=>$id,
+						'Course.startdate >='=>date('Y-m-d', strtotime('-1 week')),
+						'Course.startdate <='=>date('Y-m-d', strtotime('+1 week'))
+					),
+					'joins'=>array(
+						array(
+							'table'=>'courses',
+							'alias'=>'Course',
+							'type'=>'LEFT',
+							'conditions'=>array(
+								'Course.id = Instructing.course_id'
+							)
+						),
+						array(
+							'table'=>'course_types',
+							'alias'=>'CourseType',
+							'type'=>'LEFT',
+							'conditions'=>array(
+								'CourseType.id = Course.course_type_id'
+							)
+						)
+					),
+					'fields'=>'*'
+				));
+				$this->set('recentCourses', $recent);
+
+				$this->Instructor->contain(array(
+				));
+				$c = $this->Instructor->read(null, $id);
+				$this->set('instructor', $c);
+				$this->render('Instructors/pages/'.$page);
+			break;
+			//</editor-fold>
+
+			case 'courses':
+				$c = $this->Instructor->read(null, $id);
+				$this->set('instructor', $c);
+				$this->render('Instructors/pages/'.$page);
+			break;
+
+		}
+	}
+
+	public function admin_index()
+	{
+
+	}
+
+	public function admin_edit($id)
+	{
+		if ($this->request->is('post') || $this->request->is('put'))
+		{
+			if ($this->Instructor->save($this->request->data))
+			{
+				$this->Session->setFlash('Successfully edited instructor record', 'notices/success');
+				$this->redirect(array('action'=>'view', $id));
+			}
+		}
+
+		$this->request->data = $this->Instructor->read(null, $id);
+		$this->set('tiers', $this->Instructor->Tier->find('list'));
+		$this->set('statuses', $this->Instructor->Status->find('list'));
+	}
 }
