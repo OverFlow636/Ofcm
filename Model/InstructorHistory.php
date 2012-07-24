@@ -62,17 +62,15 @@ class InstructorHistory extends OfcmAppModel
 		$this->Instructing->contain(array(
 			'Course'
 		));
-		$taught = $this->Instructing->findAllByInstructorId($data['instructor_id']);
+		$taught = $this->Instructing->findAllByInstructorIdAndStatusId($data['instructor_id'], 3);
 		foreach($taught as $i => $instructing)
-			if ($instructing['Instructing']['status_id'] == 3)
-			{
-				$data['instructed'][$instructing['Course']['course_type_id']] = 1;
-				$data['sponsored_courses_taught']++;
-				//lead
-				if ($instructing['Instructing']['role'] == 'Lead')
-					$data['lead']++;
-			}
-
+		{
+			$data['instructed'][$instructing['Course']['course_type_id']] = 1;
+			$data['sponsored_courses_taught']++;
+			//lead
+			if ($instructing['Instructing']['role'] == 'Lead')
+				$data['lead']++;
+		}
 
 		$data['additional_courses'] = unserialize($data['additional_courses']);
 		$data['lead_courses'] = unserialize($data['lead_courses']);
