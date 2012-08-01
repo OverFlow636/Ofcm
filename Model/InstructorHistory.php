@@ -26,7 +26,7 @@ class InstructorHistory extends OfcmAppModel
 
 		foreach($results as $idx => $instructor)
 			if (!empty($results[$idx]['InstructorHistory']['id']))
-				$results[$idx]['InstructorHistory'] = $this->processData($results[$idx]['InstructorHistory']);
+				$results[$idx]['InstructorHistory'] = $this->processData($instructor['InstructorHistory']);
 
 		return $results;
 	}
@@ -63,10 +63,11 @@ class InstructorHistory extends OfcmAppModel
 			'Course'
 		));
 		$taught = $this->Instructing->findAllByInstructorIdAndStatusId($data['instructor_id'], 3);
+		if (!isset($data['processed']))
+			$data['sponsored_courses_taught'] += count($taught);
 		foreach($taught as $i => $instructing)
 		{
 			$data['instructed'][$instructing['Course']['course_type_id']] = 1;
-			$data['sponsored_courses_taught']++;
 			//lead
 			if ($instructing['Instructing']['role'] == 'Lead')
 				$data['lead']++;
@@ -100,6 +101,7 @@ class InstructorHistory extends OfcmAppModel
 			$data['course_enhancement_courses'] = unserialize($data['course_enhancement_courses']);
 
 		$data['any_instructor'] = ($data['basic_instructor'] || $data['firearms_instructor'] || $data['medical_instructor']);
+		$data['processed'] = true;
 		return $data;
 	}
 

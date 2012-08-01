@@ -24,7 +24,21 @@ class Course extends OfcmAppModel
 			'order' => ''
 		),
 		'Location',
-		'Status'
+		'Status',
+		'NextCourse'=>array(
+			'className' => 'Course',
+			'foreignKey' => 'next_course_id',
+			'conditions' => '',
+			'fields' => '',
+			'order' => ''
+		),
+		'PrevCourse'=>array(
+			'className' => 'Course',
+			'foreignKey' => 'previous_course_id',
+			'conditions' => '',
+			'fields' => '',
+			'order' => ''
+		),
 	);
 
 	public $hasMany = array(

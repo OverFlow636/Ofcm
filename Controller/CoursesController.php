@@ -252,7 +252,8 @@ class CoursesController extends OfcmAppController
 			'conditions' => array(
 				'UNIX_TIMESTAMP(startdate) >=' => $vars['start'], 'UNIX_TIMESTAMP(startdate) <=' => $vars['end'],
 				'status_id'=>10,
-				'conference_id'=>0
+				'conference_id'=>0,
+				'course_type_id !='=>26
 		));
 		$this->Course->contain(array('CourseType', 'Status'));
 		$events = $this->Course->find('all', $conditions);
@@ -731,7 +732,9 @@ class CoursesController extends OfcmAppController
 						switch($att['status_id'])
 						{
 							case 3:
-							case 26: $offc[] = $att;
+							case 26:
+								if (!$att['confirmation_message_id'])
+									$offc[] = $att;
 							break;
 
 							case 4:
@@ -742,7 +745,9 @@ class CoursesController extends OfcmAppController
 							case 18:
 							case 19:
 							case 22:
-							case 23: $sta[] = $att;
+							case 23:
+								if (!$att['afteraction_message_id'])
+									$sta[] = $att;
 						}
 
 					foreach($offc as $user)
@@ -1296,14 +1301,16 @@ END:VCALENDAR';
 			'Instructing.Instructor.Tier',
 			'Instructing.Status',
 			'Instructing.User',
-			'Location',
+			'Location.City',
+			'Location.State',
 			'Hosting.Agency',
 			'Hosting.Status',
 			'Contact.User.Agency',
 			'Contact.Status',
 			'CourseType',
 			'Status',
-			'Note'
+			'Note',
+			'Funding'
 		));
 		$this->set('course', $this->Course->read(null, $id));
 
@@ -1314,19 +1321,27 @@ END:VCALENDAR';
 		$this->set('Instructor', $this->Course->Instructing->Instructor->findByUserId($this->Auth->User('id')));
 	}
 
+	public function instructor_viewTabs($id = null)
+	{
+
+	}
+
 	public function instructor_index()
 	{
 		$this->Course->contain(array(
 			'Instructing.Status',
 			'Instructing.user_id = '.$this->Auth->user('id'),
-			'CourseType'
+			'CourseType',
+			'NextCourse',
+			'PrevCourse'
 		));
 		$this->set('courses', $this->Course->find('all', array(
 			'conditions'=>array(
-				'startdate > now()',
-				'status_id'=>10,
-				'conference_id'=>0
-			)
+				'Course.startdate > now()',
+				'Course.status_id'=>10,
+				'Course.conference_id'=>0
+			),
+			'order'=>'Course.startdate ASC'
 		)));
 	}
 }
