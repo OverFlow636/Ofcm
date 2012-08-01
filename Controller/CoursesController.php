@@ -129,7 +129,7 @@ class CoursesController extends OfcmAppController
 
 			case 'conference':
 				$conditions = array(
-					'conference_id'=>$extra
+					'Course.conference_id'=>$extra
 				);
 				$aColumns = array(
 					'Course.id',
