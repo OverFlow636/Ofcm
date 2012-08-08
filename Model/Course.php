@@ -1,5 +1,6 @@
 <?php
 App::uses('OfcmAppModel', 'Ofcm.Model');
+App::uses('OutlookEmail', 'Custom');
 /**
  * Course Model
  *
@@ -236,5 +237,93 @@ class Course extends OfcmAppModel
 			'start'=>$data['Course']['startdate'],
 			'end'=>$data['Course']['enddate']
 		);
+	}
+
+
+	public function sendCalendarInvite($id, $sendto)
+	{
+		//need to loop thru all ids in course list
+
+		$this->data = $this->read(null, $id);
+
+		$dtstart= GMDATE("Ymd\T000000", strtotime($this->data['Course']['startdate']));
+		$dtend= GMDATE("Ymd\T000000", strtotime($this->data['Course']['enddate']));
+
+		$todaystamp = GMDATE("Ymd\THis\Z");
+		$cal_uid = md5('Course#'.$id);
+		$desc = $this->getDescription($id);
+
+$ics= 'BEGIN:VCALENDAR
+METHOD:REQUEST
+PRODID:Microsoft Exchange Server 2007
+VERSION:2.0
+BEGIN:VTIMEZONE
+TZID:Central Standard Time
+BEGIN:STANDARD
+DTSTART:16010101T020000
+TZOFFSETFROM:-0500
+TZOFFSETTO:-0600
+RRULE:FREQ=YEARLY;INTERVAL=1;BYDAY=1SU;BYMONTH=11
+END:STANDARD
+BEGIN:DAYLIGHT
+DTSTART:16010101T020000
+TZOFFSETFROM:-0600
+TZOFFSETTO:-0500
+RRULE:FREQ=YEARLY;INTERVAL=1;BYDAY=2SU;BYMONTH=3
+END:DAYLIGHT
+END:VTIMEZONE
+BEGIN:VEVENT
+DESCRIPTION;LANGUAGE=en-US:'.$desc['desc'].'
+SUMMARY;LANGUAGE=en-US:'.$desc['title'].'
+DTSTART;TZID=Central Standard Time:'.$dtstart.'
+DTEND;TZID=Central Standard Time:'.$dtend.'
+UID:'.$cal_uid.'
+CLASS:PUBLIC
+PRIORITY:5
+DTSTAMP:'.$todaystamp.'
+TRANSP:OPAQUE
+STATUS:CONFIRMED
+SEQUENCE:2
+LOCATION;LANGUAGE=en-US:New York\, NY
+X-MICROSOFT-CDO-APPT-SEQUENCE:2
+X-MICROSOFT-CDO-OWNERAPPTID:2110183705
+X-MICROSOFT-CDO-BUSYSTATUS:FREE
+X-MICROSOFT-CDO-INTENDEDSTATUS:FREE
+X-MICROSOFT-CDO-ALLDAYEVENT:TRUE
+X-MICROSOFT-CDO-IMPORTANCE:1
+X-MICROSOFT-CDO-INSTTYPE:0
+BEGIN:VALARM
+ACTION:DISPLAY
+DESCRIPTION:REMINDER
+TRIGGER;RELATED=START:-PT18H
+END:VALARM
+END:VEVENT
+END:VCALENDAR';
+
+		file_put_contents('/tmp/meeting.ics', $ics);
+
+
+		$email = new OutlookEmail('smtp');
+		return $email->from(array('noreply@alerrt.org' => 'No Reply'))
+			->to($sendto)
+			->subject($desc['title'])
+			->attachments(array(
+				'meeting.ics'=>array(
+					'file'=>'/tmp/meeting.ics',
+					'mimetype'=>'text/calendar; charset="utf-8"; method=REQUEST',
+					'contentDisposition'=>false
+				)
+			))
+			->send($desc['desc']);
+	}
+
+	public function sendCourseAnnouncment($id)
+	{
+		//send to staff
+
+
+
+		//send to instructors which are requesting this class type of alerts
+
 	}
 }

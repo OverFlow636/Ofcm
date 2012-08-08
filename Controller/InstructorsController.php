@@ -33,6 +33,24 @@ class InstructorsController extends OfcmAppController
 		$this->set('instructors', $this->Instructor->find('all', array('order'=>'Instructor.created DESC')));
 	}
 
+	function instructor_historyPrint($id = null)
+	{
+		$this->Instructor->contain(array(
+			'User',
+			'InstructorHistory'
+		));
+		$data = $this->Instructor->read(null, $id);
+		$this->set('instructor', $data);
+
+		$this->set('results', $this->Instructor->Tier->TierRequirement->test($data));
+		$this->Instructor->Tier->contain(array(
+			'TierRequirement'
+		));
+		$this->set('tiers', $this->Instructor->Tier->find('all'));
+
+		$this->layout = 'ajax';
+	}
+
 	public function admin_dataTable($type='sindex', $id=null)
 	{
 		$this->datatable($type, $id);

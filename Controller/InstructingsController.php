@@ -212,6 +212,7 @@ class InstructingsController extends OfcmAppController
 
 	public function instructor_apply($course = null)
 	{
+		//<editor-fold defaultstate="collapsed" desc="post">
 		if ($this->request->is('post') || $this->request->is('put'))
 		{
 			$inst = $this->Instructing->Instructor->findByUserId($this->Auth->user('id'));
@@ -255,12 +256,27 @@ class InstructingsController extends OfcmAppController
 				$this->redirect(array('controller'=>'Courses','action'=>'view', $course['Course']['id']));
 			}
 		}
+		//</editor-fold>
 
-		$this->Instructing->Course->contain(array(
-			'CourseType',
-			'Status'
-		));
-		$this->set('course', $this->Instructing->Course->read(null, $course));
+		$id = $course;
+		$this->Instructing->Course->contain(array('CourseType','Status'));
+		$course = $this->Instructing->Course->read(null, $id);
+		$list[$id] = $course;
+
+		while ($course['Course']['next_course_id']!=null)
+		{
+			$this->Instructing->Course->contain(array('CourseType','Status'));
+			$id = $course['Course']['next_course_id'];
+			$course = $this->Instructing->Course->read(null, $id);
+			$list[$id] = $course;
+		}
+
+		$this->set('courses', $list);
+
+		$this->Instructing->Instructor->contain(array('Tier'));
+		$this->set('instructor', $this->Instructing->Instructor->findByUserId($this->Auth->user('id')));
+
+		$this->set('tiers', $this->Instructing->Tier->find('all'));
 	}
 
 	public function admin_add($id)

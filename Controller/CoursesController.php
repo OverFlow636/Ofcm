@@ -1,6 +1,6 @@
 <?php
 App::uses('OfcmAppController', 'Ofcm.Controller');
-App::uses('OutlookEmail', 'Custom');
+
 /**
  * Courses Controller
  *
@@ -31,9 +31,14 @@ class CoursesController extends OfcmAppController
 			$this->Course->contain(array(
 				'CourseType',
 				'Hosting.Agency',
-				'Contact.User.Agency'
+				'Contact.User.Agency',
+				'Instructing'=>array(
+					'conditions'=>array('Instructing.status_id'=>3)
+				),
+				'Attending.User'
 			));
 			$this->set('course', $this->Course->read(null, $id));
+			$this->set('statuses', $this->Course->Status->find('list'));
 		}
 		else
 		{
@@ -928,7 +933,7 @@ class CoursesController extends OfcmAppController
 		}
 	}
 
-	public function admin_add($step=1)
+	public function admin_add($step=1, $extra = null)
 	{
 		//<editor-fold defaultstate="collapsed" desc="post">
 		if ($this->request->is('post') || $this->request->is('put'))
@@ -948,6 +953,20 @@ class CoursesController extends OfcmAppController
 				break;
 
 				case 3:
+
+					//create agency if no exist
+					if (empty($this->request->data['Course']['agency_id']))
+					{
+						$find = $this->Course->Hosting->Agency->findByName($this->request->data['Course']['agency']);
+						if ($find)
+							$this->request->data['Course']['agency_id'] = $find['Agency']['id'];
+						else
+						{
+							$this->Course->Hosting->Agency->save(array('name'=>$this->request->data['Course']['agency']));
+							$this->request->data['Course']['agency_id'] = $this->Course->Hosting->Agency->getLastInsertId();
+						}
+					}
+
 					// poc_id == 0  = no contact
 					// poc_id == 1  = create new contact
 					// other = contact_user_id
@@ -1029,23 +1048,23 @@ class CoursesController extends OfcmAppController
 
 
 				case 9:
+					if (!empty($this->request->data['Course']['contacts']))
+						foreach($this->request->data['Course']['contacts'] as $contact)
+							if (strpos($contact, '@'))
+								$send[] = $contact;
 
-					if ($this->Course->validates($this->request->data))
-					{
-						if ($this->Course->save($this->request->data))
-						{
-							$this->Session->setFlash('Course created.', 'notices/success');
-							$this->Session->write('newcourse', $this->Course->getLastInsertId());
-							$this->redirect(array('action'=>'add', 9));
-							//$this->redirect(array('action'=>'view', $this->Course->getLastInsertId()));
-						}
-						else
-						{
-							$this->Session->setFlash('Error saving course.', 'notices/error');
-						}
-					}
-					else
-						$this->Session->setFlash('Please correct the validation errors below to continue.', 'notices/notice');
+					$more = preg_split("/[,\\n]+/", $this->request->data['Course']['moreemails']);
+					if (!empty($more))
+						foreach($more as $contact)
+							if (strpos($contact, '@'))
+								$send[] = trim($contact);
+
+					$send = $this->Course->sendCalendarInvite($this->request->data['Course']['id'], $send);
+
+					$send = $this->Course->sendCourseAnnouncment($this->request->data['Course']['id']);
+
+					$this->Session->setFlash('Finished creating course.', 'notices/success');
+					$this->redirect(array('controller'=>'Courses', 'action'=>'index'));
 				break;
 			}
 		}
@@ -1093,20 +1112,21 @@ class CoursesController extends OfcmAppController
 
 			case 8:
 				$newcourse = $this->Session->read('newcourse');
+				$newids = array();
 				foreach($newcourse['Course'] as $course)
 				{
 					$c = array_merge($newcourse['info'], $course);
-					$c['status_id']=1;
 
 					$this->Course->create($c);
 					if ($this->Course->save())
 					{
 						$cid = $this->Course->getLastInsertId();
+						$newids[] = $cid;
 						foreach($newcourse['Hosting'] as $host)
 						{
 							$hosting = array(
 								'agency_id'=>$host['agency_id'],
-								'seats'=>$host['seats'],
+								'seats'=>intval($host['seats']),
 								'status_id'=>$host['status_id'],
 								'course_id'=>$cid
 							);
@@ -1125,19 +1145,34 @@ class CoursesController extends OfcmAppController
 					else
 						die('course create error');
 				}
+				$this->Session->write('newids', $newids);
+				$this->Session->delete('newcourse');
 
-				$this->redirect(array('action'=>'index','pending'));
+				$this->redirect(array('action'=>'add', 9));
 			break;
 
 			case 9:
-				$id = $this->Session->read('newcourse');
-				$id = 1024;
+				$courses = array();
+				$ids = $this->Session->read('newids');
+				foreach($ids as $id)
+				{
+					$this->Course->contain(array(
+						'Contact.User'
+					));
+					$courses[$id] = $this->Course->read(null, $id);
+				}
+				$this->set('courses', $courses);
+			break;
 
-				$this->Course->contain(array(
-					'Contact.User'
-				));
-				$this->set('data', $this->Course->read(null, $id));
+			case 10: //remove hosting record
+				$newcourse = $this->Session->read('newcourse');
+				foreach($newcourse['Hosting'] as $idx => $host)
+					if ($host['agency_id'] == $extra)
+						unset($newcourse['Hosting'][$idx]);
 
+				$this->Session->write('newcourse', $newcourse);
+				$this->Session->setFlash('Successfully removed hosting agency', 'notices/success');
+				$this->redirect(array('action'=>'add', 6));
 			break;
 		}
 		$this->set('courseTypes', $this->Course->CourseType->find('list'));
@@ -1293,7 +1328,7 @@ END:VCALENDAR';
 
 	/** Instructor functions **/
 
-	public function instructor_view($id = null)
+	public function instructor_view($id = null, $showApply=1)
 	{
 		$this->Course->contain(array(
 			//'Attending.User.Agency',
@@ -1319,11 +1354,24 @@ END:VCALENDAR';
 			'User'
 		));
 		$this->set('Instructor', $this->Course->Instructing->Instructor->findByUserId($this->Auth->User('id')));
+		$this->set('showApply', $showApply);
 	}
 
 	public function instructor_viewTabs($id = null)
 	{
+		$this->Course->contain(array('CourseType'));
+		$course = $this->Course->read(null, $id);
+		$list[$id] = $course['CourseType']['shortname'].' on '.date('m-d-Y', strtotime($course['Course']['startdate']));
 
+		while ($course['Course']['next_course_id']!=null)
+		{
+			$this->Course->contain(array('CourseType'));
+			$id = $course['Course']['next_course_id'];
+			$course = $this->Course->read(null, $id);
+			$list[$id] = $course['CourseType']['shortname'].' on '.date('m-d-Y', strtotime($course['Course']['startdate']));
+		}
+
+		$this->set('list', $list);
 	}
 
 	public function instructor_index()
