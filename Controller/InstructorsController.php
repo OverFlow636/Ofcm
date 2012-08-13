@@ -311,4 +311,46 @@ class InstructorsController extends OfcmAppController
 		$this->set('tiers', $this->Instructor->Tier->find('list'));
 		$this->set('statuses', $this->Instructor->Status->find('list'));
 	}
+
+	public function admin_email()
+	{
+		if ($this->request->is('post'))
+		{
+			$conditions = array();
+
+			if ($this->request->data['Instructor']['pending'])
+				$conditions[] = array('status_id'=>$this->request->data['Instructor']['pending']);
+
+			if ($this->request->data['Instructor']['approved'])
+				$conditions[] = array('status_id'=>$this->request->data['Instructor']['approved']);
+
+			if ($this->request->data['Instructor']['inactive'])
+				$conditions[] = array('status_id'=>$this->request->data['Instructor']['inactive']);
+
+			$instructors = $this->Instructor->find('all', array(
+				'conditions'=>array('or'=>$conditions),
+				'contain'=>array(
+					'User.email'
+				)
+			));
+
+			$emails = Set::extract('/User/email', $instructors);
+
+			$email = new CakeEmail('smtp');
+			$send = $email->from(array('noreply@alerrt.org' => 'ALERRT'))
+				->to('noreply@alerrt.org')
+				->bcc($emails)
+				->emailFormat('html')
+				->subject($this->request->data['Instructor']['subject'])
+				->send($this->request->data['Instructor']['body']);
+
+			if ($send)
+			{
+				$this->Session->setFlash('Successfully sent spam', 'notices/success');
+				$this->redirect(array('action'=>'index'));
+			}
+			else
+				$this->Session->setFlash('Unable to send spam, try again later?', 'notices/error');
+		}
+	}
 }
