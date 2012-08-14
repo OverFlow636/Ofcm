@@ -33,7 +33,7 @@ class InstructorsController extends OfcmAppController
 		$this->set('instructors', $this->Instructor->find('all', array('order'=>'Instructor.created DESC')));
 	}
 
-	function instructor_historyPrint($id = null)
+	public function instructor_historyPrint($id = null)
 	{
 		$this->Instructor->contain(array(
 			'User',
@@ -50,6 +50,33 @@ class InstructorsController extends OfcmAppController
 
 		$this->layout = 'ajax';
 	}
+
+	public function instructor_history($id = null)
+	{
+		$this->Instructor->contain(array('InstructorHistory'));
+		$instructor = $this->Instructor->read(null, $id);
+		if ($instructor['Instructor']['instructor_history_id'])
+			$this->set('instructor', $instructor);
+		else
+		{
+			$this->Session->setFlash('Please fill out the history document', 'notices/success');
+			$this->redirect(array('action'=>'add_history', $id));
+		}
+
+
+	}
+
+	public function instructor_add_history($id = null)
+	{
+		$this->Instructor->contain(array('InstructorHistory'));
+		$this->data = $this->Instructor->read(null, $id);
+
+		$this->render('instructor_edit_history');
+	}
+
+
+
+
 
 	public function admin_dataTable($type='sindex', $id=null)
 	{
@@ -312,45 +339,95 @@ class InstructorsController extends OfcmAppController
 		$this->set('statuses', $this->Instructor->Status->find('list'));
 	}
 
-	public function admin_email()
+	public function admin_email($step=1)
 	{
 		if ($this->request->is('post'))
 		{
-			$conditions = array();
-
-			if ($this->request->data['Instructor']['pending'])
-				$conditions[] = array('status_id'=>$this->request->data['Instructor']['pending']);
-
-			if ($this->request->data['Instructor']['approved'])
-				$conditions[] = array('status_id'=>$this->request->data['Instructor']['approved']);
-
-			if ($this->request->data['Instructor']['inactive'])
-				$conditions[] = array('status_id'=>$this->request->data['Instructor']['inactive']);
-
-			$instructors = $this->Instructor->find('all', array(
-				'conditions'=>array('or'=>$conditions),
-				'contain'=>array(
-					'User.email'
-				)
-			));
-
-			$emails = Set::extract('/User/email', $instructors);
-
-			$email = new CakeEmail('smtp');
-			$send = $email->from(array('noreply@alerrt.org' => 'ALERRT'))
-				->to('noreply@alerrt.org')
-				->bcc($emails)
-				->emailFormat('html')
-				->subject($this->request->data['Instructor']['subject'])
-				->send($this->request->data['Instructor']['body']);
-
-			if ($send)
+			switch($step)
 			{
-				$this->Session->setFlash('Successfully sent spam', 'notices/success');
-				$this->redirect(array('action'=>'index'));
+				case 1:
+					$conditions = array();
+
+					if ($this->request->data['Instructor']['pending'])
+						$conditions[] = array('status_id'=>$this->request->data['Instructor']['pending']);
+
+					if ($this->request->data['Instructor']['approved'])
+						$conditions[] = array('status_id'=>$this->request->data['Instructor']['approved']);
+
+					if ($this->request->data['Instructor']['inactive'])
+						$conditions[] = array('status_id'=>$this->request->data['Instructor']['inactive']);
+
+					$instructors = $this->Instructor->find('all', array(
+						'conditions'=>array('or'=>$conditions),
+						'contain'=>array(
+							'User.email'
+						)
+					));
+
+					$emails = Set::extract('/User/email', $instructors);
+
+					$this->Session->write('pendingEmails', $emails);
+					$this->Session->write('subject', $this->request->data['Instructor']['subject']);
+					$this->Session->write('body', $this->request->data['Instructor']['body']);
+					$this->redirect(array('action'=>'email', 3));
+				break;
 			}
-			else
-				$this->Session->setFlash('Unable to send spam, try again later?', 'notices/error');
 		}
+
+
+		switch($step)
+		{
+			case 2:
+
+				$emails = $this->Session->read('pendingEmails');
+				$subject = $this->Session->read('subject');
+				$body = $this->Session->read('body');
+				$count = 0;
+				$bcc = array();
+				foreach($emails as $idx => $sendto)
+				{
+					$bcc[] = $sendto;
+
+					unset($emails[$idx]);
+					$count++;
+					if ($count >= 90)
+						break;
+				}
+
+				$email = new CakeEmail('smtp');
+				$email->from(array('noreply@alerrt.org' => 'ALERRT'));
+				$email->from('noreply@alerrt.org');
+				$email->bcc($bcc);
+				$email->emailFormat('html');
+				$email->subject($subject);
+				$send = $email->send($body);
+
+				if (!$send)
+					die('send error');
+
+				if (!empty($emails))
+				{
+					$this->Session->write('pendingEmails', $emails);
+					$this->render('Instructors/pages/email/3');
+				}
+				else
+				{
+					$this->Session->setFlash('Sent all messages', 'notices/success');
+					$this->redirect(array('action'=>'index'));
+				}
+			break;
+
+			case 3:
+
+				$this->render('Instructors/pages/email/3');
+
+			break;
+		}
+
+
+
+
+
+
 	}
 }
