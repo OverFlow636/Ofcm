@@ -68,6 +68,40 @@ class InstructorsController extends OfcmAppController
 
 	public function instructor_add_history($id = null)
 	{
+		if ($this->request->is('post') || $this->request->is('put'))
+		{
+			$ins = $this->Instructor->read(null, $id);
+			$history_id = $ins['Instructor']['instructor_history_id'];
+			if ($history_id)
+				$this->request->data['InstructorHistory']['id'] = $history_id;
+
+			$this->request->data['InstructorHistory']['contract_year'] = $this->request->data['InstructorHistory']['contract_year']['year'];
+			$this->request->data['InstructorHistory']['basic_instructor_year'] = $this->request->data['InstructorHistory']['basic_instructor_year']['year'];
+			$this->request->data['InstructorHistory']['firearms_instructor_year'] = $this->request->data['InstructorHistory']['firearms_instructor_year']['year'];
+
+			$this->request->data['InstructorHistory']['instructed'] = serialize($this->request->data['instructed']);
+			$this->request->data['InstructorHistory']['attended'] = serialize($this->request->data['attended']);
+			$this->request->data['InstructorHistory']['additional_courses'] = serialize($this->request->data['additional_courses']);
+			$this->request->data['InstructorHistory']['lead_courses'] = serialize($this->request->data['InstructorHistory']['lead_courses']);
+			$this->request->data['InstructorHistory']['course_enhancement_courses']	= serialize($this->request->data['InstructorHistory']['course_enhancement_courses']);
+
+			//die(pr($this->request->data['InstructorHistory']));
+			if ($this->Instructor->InstructorHistory->save($this->request->data['InstructorHistory']))
+			{
+				if (!$history_id)
+					$this->Instructor->save(array('id'=>$id, 'instructor_history_id'=>$this->Instructor->InstructorHistory->getLastInsertId()));
+
+				$this->Session->setFlash('Successfully saved history data', 'notices/success');
+				$this->redirect(array('plugin'=>'ofum','controller'=>'users','action'=>'view', $ins['Instructor']['user_id']));
+			}
+			else
+			{
+				$this->Session->setFlash('Error saving history data', 'notices/error');
+				$this->redirect(array('plugin'=>'ofum','controller'=>'users','action'=>'view', $ins['Instructor']['user_id']));
+			}
+		}
+
+
 		$this->Instructor->contain(array('InstructorHistory'));
 		$this->data = $this->Instructor->read(null, $id);
 
