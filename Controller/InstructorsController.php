@@ -75,6 +75,8 @@ class InstructorsController extends OfcmAppController
 			if ($history_id)
 				$this->request->data['InstructorHistory']['id'] = $history_id;
 
+			$this->request->data['InstructorHistory']['instructor_id'] = $id;
+
 			$this->request->data['InstructorHistory']['contract_year'] = $this->request->data['InstructorHistory']['contract_year']['year'];
 			$this->request->data['InstructorHistory']['basic_instructor_year'] = $this->request->data['InstructorHistory']['basic_instructor_year']['year'];
 			$this->request->data['InstructorHistory']['firearms_instructor_year'] = $this->request->data['InstructorHistory']['firearms_instructor_year']['year'];
