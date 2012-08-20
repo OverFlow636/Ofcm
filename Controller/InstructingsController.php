@@ -7,6 +7,72 @@ App::uses('OfcmAppController', 'Ofcm.Controller');
  */
 class InstructingsController extends OfcmAppController
 {
+	var $allowedActions = array(
+		'tierChange'
+	);
+
+	public function tierChange($instructing, $approve)
+	{
+		$this->Instructing->id = $instructing;
+		$courseid = $this->Instructing->field('course_id');
+		$iid = $this->Instructing->field('user_id');
+		$user = $this->Instructing->User->read(null, $iid);
+
+		$series = array();
+		$this->Instructing->Course->contain(array('CourseType'));
+		$firstcourse = $course = $this->Instructing->Course->read(null, $courseid);
+		$series[] = $courseid;
+
+		while ($course['Course']['next_course_id']!=null)
+		{
+			$this->Instructing->Course->contain();
+			$id = $course['Course']['next_course_id'];
+			$course = $this->Instructing->Course->read(null, $id);
+			$series[] = $id;
+		}
+
+		if ($approve)
+		{
+			$this->Instructing->updateAll(
+				array('status_id'=>3),
+				array('course_id'=>$series, 'Instructing.user_id'=>$iid)
+			);
+
+			//send approval to instructor
+			$args = array(
+				'email_template_id'=>5,
+				'sendTo'=>$user['User']['email'],
+				'from'=>array('curnutt@alerrt.org'=>'John Curnutt')
+			);
+			$firstcourse['Course']['CourseType'] = $firstcourse['CourseType'];
+			$user['Instructor']['User']['first_name'] = $user['User']['first_name'];
+			$this->_sendTemplateEmail($args, array_merge($user, $firstcourse));
+
+
+		}
+		else
+		{
+			$this->Instructing->updateAll(
+				array('status_id'=>7),
+				array('course_id'=>$series, 'Instructing.user_id'=>$iid)
+			);
+
+		}
+
+		//let john know they approved the tier change
+		$args = array(
+			'email_template_id'=>16,
+			'from'=>$user['User']['email'],
+		);
+		if (Configure::read('debug'))
+			$args['sendTo'] = 'jan@alerrt.org';
+		else
+			$args['sendTo'] = 'curnutt@alerrt.org';
+		$this->_sendTemplateEmail($args, array_merge($user, $firstcourse, array('Tc'=>array('action'=>($approve?'Approved':'Declined')))));
+		
+
+		$this->redirect(array('instructor'=>true,'controller'=>'Courses', 'action'=>'view', $firstcourse['Course']['id']));
+	}
 
 	public function admin_dataTable($courseid =null, $type='datatable')
 	{
@@ -102,6 +168,13 @@ class InstructingsController extends OfcmAppController
 					'conditions'=>array(
 						'Agency.id = User.agency_id'
 					));
+				$joins[] = array(
+					'table'=>'tiers',
+					'alias'=>'InstructorTier',
+					'type'=>'LEFT',
+					'conditions'=>array(
+						'InstructorTier.id = Instructor.tier_id'
+					));
 			break;
 		}
 
@@ -187,21 +260,40 @@ class InstructingsController extends OfcmAppController
 
 	public function admin_bulkEdit($courseid = null)
 	{
+		$series = array();
+		$this->Instructing->Course->contain();
+		$course = $this->Instructing->Course->read(null, $courseid);
+		$series[] = $courseid;
+
+		while ($course['Course']['next_course_id']!=null)
+		{
+			$this->Instructing->Course->contain();
+			$id = $course['Course']['next_course_id'];
+			$course = $this->Instructing->Course->read(null, $id);
+			$series[] = $id;
+		}
+
 		foreach($this->request->data['instructing'] as $attid => $selected)
 			if ($selected)
 			{
 				$this->Instructing->id = $attid;
+				$iid = $this->Instructing->field('user_id');
 				switch($this->request->data['Instructing']['action'])
 				{
-					case 'A': $this->Instructing->saveField('status_id', 3); break;
-					case 'D': $this->Instructing->saveField('status_id', 7); break;
-					case 'W': $this->Instructing->saveField('status_id', 25); break;
+					case 'A': $this->Instructing->updateAll(array('status_id'=>3), array('course_id'=>$series, 'Instructing.user_id'=>$iid)); break;
+					case 'D': $this->Instructing->updateAll(array('status_id'=>7), array('course_id'=>$series, 'Instructing.user_id'=>$iid)); break;
+					case 'W': $this->Instructing->updateAll(array('status_id'=>25), array('course_id'=>$series, 'Instructing.user_id'=>$iid)); break;
 
-					case 'L': $this->Instructing->saveField('role', 'Lead'); break;
-					case 'S': $this->Instructing->saveField('role', 'Shadow'); break;
-					case 'B': $this->Instructing->saveField('role', ''); break;
+					case 'L': $this->Instructing->updateAll(array('role'=>'\'Lead\''), array('course_id'=>$series, 'Instructing.user_id'=>$iid)); break;
+					case 'S': $this->Instructing->updateAll(array('role'=>'\'Shadow\''), array('course_id'=>$series, 'Instructing.user_id'=>$iid)); break;
+					case 'B': $this->Instructing->updateAll(array('role'=>'null'), array('course_id'=>$series, 'Instructing.user_id'=>$iid)); break;
 
-					case 'R': $this->Instructing->delete(); break;
+					case 'M':
+						$this->Instructing->updateAll(array('tier_id'=>$this->request->data['Instructing']['tier_id']), array('course_id'=>$series, 'Instructing.user_id'=>$iid));
+						$this->Instructing->updateAll(array('status_id'=>28), array('course_id'=>$series, 'Instructing.user_id'=>$iid));
+					break;
+
+					case 'R': $this->Instructing->deleteAll(array('course_id'=>$series, 'Instructing.user_id'=>$iid)); break;
 
 				}
 			}
@@ -221,22 +313,40 @@ class InstructingsController extends OfcmAppController
 				'CourseType'
 			));
 			$course = $this->Instructing->Course->read(null, $this->request->data['Instructing']['course_id']);
-			$tier = $this->Instructing->Instructor->Tier->read(null, $inst['Instructor']['tier_id']);
-
+			if (empty($this->request->data['Instructing']['tier_select']))
+				$tier = $this->Instructing->Instructor->Tier->read(null, $inst['Instructor']['tier_id']);
+			else
+				$tier = $this->Instructing->Instructor->Tier->read(null, $this->request->data['Instructing']['tier_select']);
 
 			$this->request->data['Instructing']['user_id'] = $this->Auth->user('id');
 			$this->request->data['Instructing']['instructor_id'] = $inst['Instructor']['id'];
-			$this->request->data['Instructing']['tier_id'] = $inst['Instructor']['tier_id'];
+			$this->request->data['Instructing']['tier_id'] = $tier['Tier']['id'];
 			$this->request->data['Instructing']['status_id'] = 1;
 
 			if ($this->Instructing->save($this->request->data))
 			{
+				while ($course['Course']['next_course_id']!=null)
+				{
+					$this->Instructing->Course->contain();
+					$id = $course['Course']['next_course_id'];
+					$course = $this->Instructing->Course->read(null, $id);
+
+					$this->request->data['Instructing']['course_id'] = $id;
+					$this->Instructing->create();
+					$this->Instructing->save($this->request->data);
+				}
+
 				$args = array(
 					'email_template_id'=>7,
 					'from'=>'noreply@alerrt.org',
 					'replyTo'=>$this->Auth->user('email'),
-					'sendTo'=>'curnutt@alerrt.org'
 				);
+
+				if (Configure::read('debug'))
+					$args['sendTo'] = 'jan@alerrt.org';
+				else
+					$args['sendTo'] = 'curnutt@alerrt.org';
+
 				$result = $this->_sendTemplateEmail($args, array_merge($this->Session->read('Auth'), $course, $tier));
 
 				$args = array(
@@ -259,13 +369,13 @@ class InstructingsController extends OfcmAppController
 		//</editor-fold>
 
 		$id = $course;
-		$this->Instructing->Course->contain(array('CourseType','Status'));
+		$this->Instructing->Course->contain(array('CourseType','Status', 'Funding'));
 		$course = $this->Instructing->Course->read(null, $id);
 		$list[$id] = $course;
 
 		while ($course['Course']['next_course_id']!=null)
 		{
-			$this->Instructing->Course->contain(array('CourseType','Status'));
+			$this->Instructing->Course->contain(array('CourseType','Status', 'Funding'));
 			$id = $course['Course']['next_course_id'];
 			$course = $this->Instructing->Course->read(null, $id);
 			$list[$id] = $course;

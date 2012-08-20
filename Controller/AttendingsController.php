@@ -275,6 +275,7 @@ class AttendingsController extends OfcmAppController
 				else
 					$aColumns = array(
 						'User.name',
+						'User.title',
 						'Agency.name',
 						'CourseType.shortname',
 						'PaymentStatus.id',
@@ -376,11 +377,12 @@ class AttendingsController extends OfcmAppController
 					switch($_GET['iSortCol_0'])
 					{
 						case 0: $order = array('User.last_name'=>$_GET['sSortDir_0']); break;
-						case 1: $order = array('Agency.name'=>$_GET['sSortDir_0']); break;
-						case 2: $order = array('CourseType.shortname'=>$_GET['sSortDir_0']);break;
-						case 3: $order = array('PaymentStatus.status'=>$_GET['sSortDir_0']); break;
-						case 4: $order = array('UserState.abbr'=>$_GET['sSortDir_0']); break;
-						case 5: $order = array('Attending.created'=>$_GET['sSortDir_0']); break;
+						case 1: $order = array('User.title'=>$_GET['sSortDir_0']); break;
+						case 2: $order = array('Agency.name'=>$_GET['sSortDir_0']); break;
+						case 3: $order = array('CourseType.shortname'=>$_GET['sSortDir_0']);break;
+						case 4: $order = array('PaymentStatus.status'=>$_GET['sSortDir_0']); break;
+						case 5: $order = array('UserState.abbr'=>$_GET['sSortDir_0']); break;
+						case 6: $order = array('Attending.created'=>$_GET['sSortDir_0']); break;
 					}
 				break;
 

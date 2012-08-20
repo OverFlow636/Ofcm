@@ -471,6 +471,7 @@ class CoursesController extends OfcmAppController
 				));
 				$c = $this->Course->read(null, $id);
 				$this->set('course', $c);
+				$this->set('tiers', $this->Course->Instructing->Tier->find('list'));
 				$this->render('Courses/pages/'.$page);
 			break;
 			//</editor-fold>
@@ -642,7 +643,6 @@ class CoursesController extends OfcmAppController
 
 	public function admin_sendMessages($id = null, $type = null, $confirm=false)
 	{
-
 		$this->Course->contain(array(
 			'Status',
 			'CourseType',
@@ -678,9 +678,16 @@ class CoursesController extends OfcmAppController
 				));
 				$data = $this->Course->read(null, $id);
 			break;
+
+			case 'itc':
+				$this->Course->contain(array(
+					'Instructing.Instructor.User'
+				));
+				$data = $this->Course->read(null, $id);
+			break;
 		}
 
-
+		//<editor-fold defaultstate="collapsed" desc="Confirm -- send the mails">
 		if ($confirm)
 		{
 			switch($type)
@@ -775,6 +782,7 @@ class CoursesController extends OfcmAppController
 				break;
 
 				case 'status':
+					//<editor-fold defaultstate="collapsed" desc="status update">
 					$offc = $sta = array();
 					foreach($data['Attending'] as $att)
 						switch($att['status_id'])
@@ -834,6 +842,40 @@ class CoursesController extends OfcmAppController
 							));
 						}
 					}
+					//</editor-fold>
+				break;
+
+				case 'itc':
+					//<editor-fold defaultstate="collapsed" desc="Instructor tier change approval">
+					$tc = array();
+					foreach($data['Instructing'] as $att)
+						switch($att['status_id'])
+						{
+							case 28:
+								if (!$att['tier_change_message_id'])
+									$tc[] = $att;
+							break;
+						}
+
+					foreach($tc as $user)
+					{
+
+						$args = array(
+							'email_template_id'=>15,
+							'sendTo'=>$user['Instructor']['User']['email'],
+							'from'=>array('curnutt@alerrt.org'=>'John Curnutt')
+						);
+						$tier = $this->Course->Instructing->Tier->read(null, $user['tier_id']);
+
+						//die(pr(array_merge($user, $course, $tier)));
+						$result = $this->_sendTemplateEmail($args, array_merge($user, $course, $tier));
+
+						$this->Course->Instructing->save(array(
+							'id'=>$user['id'],
+							'tier_change_message_id'=>$result['mid']
+						));
+					}
+					//</editor-fold>
 				break;
 			}
 
@@ -843,6 +885,7 @@ class CoursesController extends OfcmAppController
 		{
 			$this->set('data', $data);
 		}
+		//</editor-fold>
 
 		$this->render('Courses'.DS.'messages'.DS.$type);
 	}
