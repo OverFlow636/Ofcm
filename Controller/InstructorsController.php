@@ -6,6 +6,17 @@ App::uses('OfcmAppController', 'Ofcm.Controller');
  */
 class InstructorsController extends OfcmAppController
 {
+	/**
+	 *Instructor application process
+	 */
+	public function apply($step = 'apply')
+	{
+
+		$this->render('Instructors'.DS.'applicationpages'.DS.$step);
+	}
+
+
+
 
 	public function instructor_testRequirements($id = null)
 	{
@@ -341,6 +352,37 @@ class InstructorsController extends OfcmAppController
 				));
 				$c = $this->Instructor->read(null, $id);
 				$this->set('instructor', $c);
+				$this->render('Instructors/pages/'.$page);
+			break;
+			//</editor-fold>
+
+			//<editor-fold defaultstate="collapsed" desc="Tier Reviews">
+			case 'tr':
+
+				$this->Instructor->contain(array(
+					'TierReview.Review.Status',
+					'TierReview.Review.Author',
+					'TierReview.Review.Course.CourseType',
+					'TierReview.Tier',
+					'TierReview.Status'
+				));
+				$data = $this->Instructor->read(null, $id);
+				$this->set('instructor', $data);
+
+				$authorids = array_unique(Set::extract('/TierReview/Review/Author/id', $data));
+
+				$author = array();
+				foreach($authorids as $aid)
+				{
+					$this->Instructor->contain(array(
+						'User'
+					));
+					$author[$aid] = $this->Instructor->read(null, $aid);
+				}
+
+				$this->set('authors', $author);
+
+
 				$this->render('Instructors/pages/'.$page);
 			break;
 			//</editor-fold>

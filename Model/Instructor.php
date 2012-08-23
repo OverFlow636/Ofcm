@@ -24,7 +24,8 @@ class Instructor extends OfcmAppModel
 
 	public $hasMany = array(
 		'Ofcm.Instructing',
-		'InstructorTierRequirement'
+		'InstructorTierRequirement',
+		'TierReview'
 	);
 
 

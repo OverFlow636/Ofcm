@@ -59,7 +59,7 @@ class InstructingsController extends OfcmAppController
 
 		}
 
-		//let john know they approved the tier change
+		//let john know they made a decision
 		$args = array(
 			'email_template_id'=>16,
 			'from'=>$user['User']['email'],
@@ -69,7 +69,7 @@ class InstructingsController extends OfcmAppController
 		else
 			$args['sendTo'] = 'curnutt@alerrt.org';
 		$this->_sendTemplateEmail($args, array_merge($user, $firstcourse, array('Tc'=>array('action'=>($approve?'Approved':'Declined')))));
-		
+
 
 		$this->redirect(array('instructor'=>true,'controller'=>'Courses', 'action'=>'view', $firstcourse['Course']['id']));
 	}
