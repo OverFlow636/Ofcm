@@ -60,11 +60,15 @@ class InstructorHistory extends OfcmAppModel
 		//merge instructing records with the history data
 		$this->Instructing = ClassRegistry::init('Ofcm.Instructing');
 		$this->Instructing->contain(array(
-			'Course'
+			'Course.CourseType.instructor_credit'
 		));
 		$taught = $this->Instructing->findAllByInstructorIdAndStatusId($data['instructor_id'], 3);
 		if (!isset($data['processed']))
-			$data['sponsored_courses_taught'] += count($taught);
+		{
+			$credits = Set::extract('/Course/CourseType/instructor_credit', $taught);
+			$data['sponsored_courses_taught'] += array_sum($credits);
+		}
+
 		foreach($taught as $i => $instructing)
 		{
 			$data['instructed'][$instructing['Course']['course_type_id']] = 1;
