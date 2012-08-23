@@ -156,17 +156,19 @@ class InstructingsController extends OfcmAppController
 				$aColumns = array(
 					'',
 					'User.name',
-					'Agency.name',
+					'Instructing.role',
 					'Tier.name',
 					'Status.id',
 					'Instructing.created'
 				);
 				$joins[] = array(
-					'table'=>'agencies',
-					'alias'=>'Agency',
+					'table'=>'tier_reviews',
+					'alias'=>'TierReview',
 					'type'=>'LEFT',
 					'conditions'=>array(
-						'Agency.id = User.agency_id'
+						'TierReview.instructor_id = Instructor.id',
+						'TierReview.tier_id = Instructor.tier_id',
+						'TierReview.status_id = 1'
 					));
 				$joins[] = array(
 					'table'=>'tiers',
@@ -202,7 +204,7 @@ class InstructingsController extends OfcmAppController
 					{
 						case 0: break;
 						case 1: $order = array('User.last_name'=>$_GET['sSortDir_0']); break;
-						case 2: $order = array('Agency.name'=>$_GET['sSortDir_0']); break;
+						case 2: $order = array('Instructing.role'=>$_GET['sSortDir_0']); break;
 						case 3: $order = array('Tier.id'=>$_GET['sSortDir_0']);break;
 						case 4: $order = array('Instructing.status_id'=>$_GET['sSortDir_0']); break;
 						case 5: $order = array('Instructing.created'=>$_GET['sSortDir_0']); break;
@@ -281,16 +283,30 @@ class InstructingsController extends OfcmAppController
 				switch($this->request->data['Instructing']['action'])
 				{
 					case 'A': $this->Instructing->updateAll(array('status_id'=>3), array('course_id'=>$series, 'Instructing.user_id'=>$iid)); break;
-					case 'D': $this->Instructing->updateAll(array('status_id'=>7), array('course_id'=>$series, 'Instructing.user_id'=>$iid)); break;
-					case 'W': $this->Instructing->updateAll(array('status_id'=>25), array('course_id'=>$series, 'Instructing.user_id'=>$iid)); break;
+					case 'D': $this->Instructing->updateAll(array('status_id'=>7,'role'=>'null','tier_review_id'=>'null'), array('course_id'=>$series, 'Instructing.user_id'=>$iid)); break;
+					case 'W': $this->Instructing->updateAll(array('status_id'=>25,'role'=>'null','tier_review_id'=>'null'), array('course_id'=>$series, 'Instructing.user_id'=>$iid)); break;
 
-					case 'L': $this->Instructing->updateAll(array('role'=>'\'Lead\''), array('course_id'=>$series, 'Instructing.user_id'=>$iid)); break;
-					case 'S': $this->Instructing->updateAll(array('role'=>'\'Shadow\''), array('course_id'=>$series, 'Instructing.user_id'=>$iid)); break;
-					case 'B': $this->Instructing->updateAll(array('role'=>'null'), array('course_id'=>$series, 'Instructing.user_id'=>$iid)); break;
+					case 'L': $this->Instructing->updateAll(array('role'=>'\'Lead\'','tier_review_id'=>'null'), array('course_id'=>$series, 'Instructing.user_id'=>$iid)); break;
+					case 'S': $this->Instructing->updateAll(array('role'=>'\'Shadow\'','tier_review_id'=>'null'), array('course_id'=>$series, 'Instructing.user_id'=>$iid)); break;
+					case 'B': $this->Instructing->updateAll(array('role'=>'null','tier_review_id'=>'null'), array('course_id'=>$series, 'Instructing.user_id'=>$iid)); break;
 
 					case 'M':
 						$this->Instructing->updateAll(array('tier_id'=>$this->request->data['Instructing']['tier_id']), array('course_id'=>$series, 'Instructing.user_id'=>$iid));
 						$this->Instructing->updateAll(array('status_id'=>28), array('course_id'=>$series, 'Instructing.user_id'=>$iid));
+					break;
+
+					case 'T':
+						//lid is the user id of the instructor checked, need to get his tier review id
+						$this->loadModel('Ofcm.Instructor');
+						$this->Instructor->contain(array('User'));
+						$ins = $this->Instructor->read(null, $this->Instructing->field('instructor_id'));
+
+						$this->loadModel('TierReview');
+						$tr = $this->TierReview->findByInstructorIdAndTierId($ins['Instructor']['id'], $ins['Instructor']['tier_id']);
+
+						//review_id
+						$this->Instructing->updateAll(array('role'=>'\'TR: '.$ins['User']['first_name'].'\'', 'tier_review_id'=>$tr['TierReview']['id']), array('course_id'=>$series, 'Instructing.user_id'=>$this->request->data['Instructing']['review_id']));
+
 					break;
 
 					case 'R': $this->Instructing->deleteAll(array('course_id'=>$series, 'Instructing.user_id'=>$iid)); break;

@@ -467,9 +467,19 @@ class CoursesController extends OfcmAppController
 						'fields'=>array('read', 'created', 'modified')
 					),
 					'Instructing.Status',
+					'Instructing.User',
 					'Status',
 				));
 				$c = $this->Course->read(null, $id);
+
+				$reviews = array();
+				foreach($c['Instructing'] as $ins)
+					if ($ins['status_id'] == 3)
+					{
+						$reviews[$ins['user_id']] = $ins['User']['name'];
+					}
+				$this->set('reviews', $reviews);
+
 				$this->set('course', $c);
 				$this->set('tiers', $this->Course->Instructing->Tier->find('list'));
 				$this->render('Courses/pages/'.$page);
@@ -679,6 +689,15 @@ class CoursesController extends OfcmAppController
 				$data = $this->Course->read(null, $id);
 			break;
 
+			case 'trconfirm':
+				$this->Course->contain(array(
+					'Instructing.Instructor.User',
+					'Instructing.Status',
+					'Instructing.Tier'
+				));
+				$data = $this->Course->read(null, $id);
+			break;
+
 			case 'itc':
 				$this->Course->contain(array(
 					'Instructing.Instructor.User'
@@ -776,6 +795,49 @@ class CoursesController extends OfcmAppController
 						$this->Course->Instructing->save(array(
 							'id'=>$user['id'],
 							'confirmation_message_id'=>$result['mid']
+						));
+					}
+					//</editor-fold>
+				break;
+
+				case 'trconfirm':
+					//<editor-fold defaultstate="collapsed" desc="Tier Review Notifications">
+					$offc = $sta = array();
+					foreach($data['Instructing'] as $att)
+						switch($att['status_id'])
+						{
+							case 3:
+							case 26:
+								if ($att['tier_review_id'] && $att['tier_review_message_id'] == 0)
+									$needtrnotify[] = $att;
+							break;
+						}
+
+					foreach($needtrnotify as $user)
+					{
+						$args = array(
+							'email_template_id'=>17,
+							'sendTo'=>$user['Instructor']['User']['email'],
+							'from'=>array('curnutt@alerrt.org'=>'John Curnutt'),
+						);
+						//$args['cc'] = 'watkins@alerrt.org';
+
+						$this->loadModel('TierReview');
+						$this->TierReview->contain(array(
+							'Instructor.User'
+						));
+						$tr = $this->TierReview->read(null, $att['tier_review_id']);
+
+						$args['attachments']= array('TierReviewNotes.pdf'=>array(
+							'file'=>WWW_ROOT.$tr['TierReview']['tier_id'].'.pdf',
+							'mimetype'=>'application/pdf; name="TierReviewNotes.pdf"'
+						));
+
+						$result = $this->_sendTemplateEmail($args, array_merge($user, $course, $tr));
+
+						$this->Course->Instructing->save(array(
+							'id'=>$user['id'],
+							'tier_review_message_id'=>$result['mid']
 						));
 					}
 					//</editor-fold>
