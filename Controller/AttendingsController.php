@@ -644,12 +644,20 @@ class AttendingsController extends OfcmAppController
 			'User.HomeAddress.City',
 			'User.HomeAddress.State'
 		));
-		$students = $this->Attending->find('all', array(
+		if ($type == 'New')
+			$students = $this->Attending->find('all', array(
 			'conditions'=>array(
 				'Attending.course_id'=>$id,
-				'Attending.status_id'=>array(3,4,5,8,16,17,18,22,23,26,25)
+				'Attending.status_id'=>array(4,5,8,16,17,18,22,23)
 			)
 		));
+		else
+			$students = $this->Attending->find('all', array(
+				'conditions'=>array(
+					'Attending.course_id'=>$id,
+					'Attending.status_id'=>array(3,4,5,8,16,17,18,22,23,26,25)
+				)
+			));
 
 		if ($type=='BJA')
 		{
