@@ -642,7 +642,8 @@ class AttendingsController extends OfcmAppController
 			'User.Agency',
 			'Status',
 			'User.HomeAddress.City',
-			'User.HomeAddress.State'
+			'User.HomeAddress.State',
+			'TeleformData'
 		));
 		if ($type == 'New')
 			$students = $this->Attending->find('all', array(
