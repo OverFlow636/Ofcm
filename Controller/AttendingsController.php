@@ -616,11 +616,16 @@ class AttendingsController extends OfcmAppController
 
 	public function admin_export($id, $type='CJD')
 	{
+		$this->Attending->Course->contain(array(
+			'CourseType',
+			'Hosting.Agency.name'
+		));
+		$course = $this->Attending->Course->read(null, $id);
+
 		$this->Attending->Course->Instructing->contain(array(
 			'User.HomeAddress',
 			'User.Agency.name',
-			'Status',
-			'Course.CourseType'
+			'Status'
 		));
 		$instructors = $this->Attending->Course->Instructing->find('all', array(
 			'conditions'=>array(
@@ -637,8 +642,7 @@ class AttendingsController extends OfcmAppController
 			'User.Agency',
 			'Status',
 			'User.HomeAddress.City',
-			'User.HomeAddress.State',
-			'Course.CourseType'
+			'User.HomeAddress.State'
 		));
 		$students = $this->Attending->find('all', array(
 			'conditions'=>array(
@@ -655,8 +659,8 @@ class AttendingsController extends OfcmAppController
 			foreach($students as $user)
 			{
 				echo '"'.$user['User']['HomeAddress']['addr1'].'",';
-				echo '"'.$user['Course']['location_description'].'",';
-				echo '"'.$user['CourseType']['name'].'",';
+				echo '"'.$course['Course']['location_description'].'",';
+				echo '"'.$course['CourseType']['name'].'",';
 				echo '"'.date('m/d/y',strtotime($user['Course']['startdate'])). ' - ' . date('m/d/y',strtotime($user['Course']['enddate'])).'",';
 				echo '"'.$user['User']['last_name'].'",';
 				echo '"'.$user['User']['first_name']."\"\n";
@@ -702,6 +706,13 @@ class AttendingsController extends OfcmAppController
 				//echo '"'.$user['User']['first_name']."\"\n";
 			}*/
 			die();
+		}
+
+		if ($type == 'New')
+		{
+			Configure::write('debug', 0);
+			$this->set(compact('students', 'instructors', 'course'));
+			$this->render('newexport');
 		}
 	}
 
