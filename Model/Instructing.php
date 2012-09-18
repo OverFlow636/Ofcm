@@ -30,6 +30,10 @@ class Instructing extends OfcmAppModel
 		'AfterActionEmail'=>array(
 			'className'=>'Message',
 			'foreignKey'=>'afteraction_message_id'
+		),
+		'InvoiceStatus'=>array(
+			'className'=>'Status',
+			'foreignKey'=>'invoice_status_id'
 		)
 	);
 }

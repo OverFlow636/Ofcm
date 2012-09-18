@@ -19,7 +19,8 @@ class Instructor extends OfcmAppModel
 		'Ofum.User',
 		'Tier',
 		'Status',
-		'Ofcm.InstructorHistory'
+		'Ofcm.InstructorHistory',
+		'Location'
 	);
 
 	public $hasMany = array(

@@ -258,10 +258,12 @@ class AttendingsController extends OfcmAppController
 				);
 			break;
 
-			case 'conf':
+
 			case 'conference':
-				$conditions['Attending.conference_id'] = $id;
 				$group = 'Attending.user_id';
+			case 'conf':
+				$conditions['Attending.conference_id'] = $id;
+
 				if ($type == 'conf')
 					$aColumns = array(
 						'Attending.id',
@@ -1100,18 +1102,23 @@ class AttendingsController extends OfcmAppController
 
 
 
+	public function kiosk_print()
+	{
+		$prints = array();
+		foreach($this->request->data['attending'] as $attid => $selected)
+			if ($selected)
+			{
+				$this->Attending->contain(array(
+					'User.Agency'
+				));
+				$prints[] = $this->Attending->read(null, $attid);
+			}
 
+		$this->set('prints', $prints);
+	}
 
 	public function kiosk_conference($conf = null)
 	{
-		$this->Attending->contain(array(
-			'Status'
-		));
-		$this->set('attending', $this->Attending->find('all', array(
-			'conditions'=>array(
-				'conference_id'=>$conf
-			)
-		)));
 		$this->set('conf', $conf);
 		$this->set('conflist', $this->Attending->Conference->find('list'));
 	}
@@ -1131,8 +1138,17 @@ class AttendingsController extends OfcmAppController
 				$this->Attending->id = $attid;
 				switch($this->request->data['Attending']['action'])
 				{
-					case 'IN': $this->Attending->saveField('status_id', 13); break;
+					case 'IN':
+						$this->Attending->saveField('status_id', 13);
+					break;
 
+					case 'CA': $this->Attending->saveField('status_id', 15); break;
+					case 'NS': $this->Attending->saveField('status_id', 19); break;
+					case 'PE': $this->Attending->saveField('status_id', 1); break;
+
+					case 'SW':
+
+					break;
 
 
 				}

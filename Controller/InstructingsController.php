@@ -282,7 +282,7 @@ class InstructingsController extends OfcmAppController
 				$iid = $this->Instructing->field('user_id');
 				switch($this->request->data['Instructing']['action'])
 				{
-					case 'A': $this->Instructing->updateAll(array('status_id'=>3), array('course_id'=>$series, 'Instructing.user_id'=>$iid)); break;
+					case 'A': $this->Instructing->updateAll(array('status_id'=>3, 'invoice_status_id'=>1), array('course_id'=>$series, 'Instructing.user_id'=>$iid)); break;
 					case 'D': $this->Instructing->updateAll(array('status_id'=>7,'role'=>'null','tier_review_id'=>'null'), array('course_id'=>$series, 'Instructing.user_id'=>$iid)); break;
 					case 'W': $this->Instructing->updateAll(array('status_id'=>25,'role'=>'null','tier_review_id'=>'null'), array('course_id'=>$series, 'Instructing.user_id'=>$iid)); break;
 
@@ -438,5 +438,121 @@ class InstructingsController extends OfcmAppController
 			}
 		}
 		$this->set('statuses', $this->Instructing->Status->find('list'));
+	}
+
+
+	public function instructor_invoices()
+	{
+		$ins = $this->Instructing->Instructor->findByUserId($this->Auth->user('id'));
+		if ($ins)
+		{
+			$inv = $this->Instructing->find('all', array(
+				'conditions'=>array(
+					'invoice_status_id NOT'=>null,
+					'Course.previous_course_id'=>null
+				),
+				'contain'=>array(
+					'User',
+					'Status',
+					'Tier',
+					'Course.Funding',
+					'Course.CourseType',
+					'InvoiceStatus'
+				)
+			));
+
+			$series = array();
+			foreach($inv as $invoice)
+			{
+				$courses = array();
+				$course = $invoice['Course'];
+				$courses[] = $course;
+				while($course['next_course_id'])
+				{
+					$this->Instructing->Course->contain(array('Funding','CourseType'));
+					$course = $this->Instructing->Course->read(null, $course['next_course_id']);
+					$fun = $course['Funding'];
+					$ct = $course['CourseType'];
+					$course = $course['Course'];
+					$course['Funding'] = $fun;
+					$course['CourseType'] = $ct;
+					$courses[] = $course;
+				}
+
+				unset($invoice['Course']);
+				$series[] = array(
+					'Invoice'=>$invoice,
+					'Courses'=>$courses
+				);
+			}
+
+			$this->set('series', $series);
+		}
+	}
+
+	public function instructor_printInvoice($id)
+	{
+		$this->Instructing->contain(array(
+			'Instructor.Location.City',
+			'Instructor.Location.State',
+			'User',
+			'Tier'
+		));
+		$ins = $this->Instructing->read(null, $id);
+		$this->set('instructing', $ins);
+
+
+		$this->Instructing->Course->contain(array('CourseType', 'Funding'));
+		$course = $this->Instructing->Course->read(null, $ins['Instructing']['course_id']);
+		$list[$id] = $course;
+		while ($course['Course']['next_course_id']!=null)
+		{
+			$this->Instructing->Course->contain(array('CourseType', 'Funding'));
+			$id = $course['Course']['next_course_id'];
+			$course = $this->Instructing->Course->read(null, $id);
+			$list[$id] = $course;
+		}
+
+		$this->set('courses', $list);
+	}
+
+	public function instructor_signInvoice($id)
+	{
+		if ($this->request->is('post') || $this->request->is('put'))
+		{
+			if ($this->request->data['Instructing']['name'] != $this->Auth->user('name'))
+				$this->Session->setFlash('Please enter your name exactly how it is below.', 'notices/error');
+			else
+			{
+				$this->Instructing->id = $id;
+				$this->Instructing->saveField('invoice_status_id', 29);
+				$this->Instructing->saveField('signed_date', date('Y-m-d'));
+				$this->Session->setFlash('Successfully signed and submitted invoice.', 'notices/success');
+				$this->redirect(array('action'=>'invoices'));
+			}
+		}
+
+		$this->Instructing->contain(array(
+			'Instructor.Location.City',
+			'Instructor.Location.State',
+			'User',
+			'Tier'
+		));
+		$ins = $this->Instructing->read(null, $id);
+		$this->set('instructing', $ins);
+
+
+		$this->Instructing->Course->contain(array('CourseType', 'Funding'));
+		$course = $this->Instructing->Course->read(null, $ins['Instructing']['course_id']);
+		$list[$id] = $course;
+		while ($course['Course']['next_course_id']!=null)
+		{
+			$this->Instructing->Course->contain(array('CourseType', 'Funding'));
+			$id = $course['Course']['next_course_id'];
+			$course = $this->Instructing->Course->read(null, $id);
+			$list[$id] = $course;
+		}
+
+		$this->set('courses', $list);
 	}
 }
