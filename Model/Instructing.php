@@ -22,6 +22,10 @@ class Instructing extends OfcmAppModel
 		),
 		'Ofcm.Course',
 		'Status',
+		'InvoiceStatus'=>array(
+			'className'=>'Status',
+			'foreignKey'=>'invoice_status_id'
+		),
 		'Tier',
 		'ConfirmationEmail'=>array(
 			'className'=>'Message',

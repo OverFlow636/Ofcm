@@ -133,6 +133,36 @@ class InstructingsController extends OfcmAppController
 					'Course.startdate',
 					'Tier.id',
 					'role',
+					'InvoiceStatus.id',
+					'signed_date',
+					'id'
+				);
+				$joins[] = array(
+					'table'=>'courses',
+					'alias'=>'Course',
+					'type'=>'LEFT',
+					'conditions'=>array(
+						'Course.id = Instructing.course_id'
+					));
+				$joins[] = array(
+					'table'=>'course_types',
+					'alias'=>'CourseType',
+					'type'=>'LEFT',
+					'conditions'=>array(
+						'CourseType.id = Course.course_type_id'
+					));
+			break;
+
+			case 'invoice':
+
+				$conditions['Instructing.instructor_id'] = $courseid;
+				$conditions['Instructing.invoice_status_id NOT'] = null;
+
+				$aColumns = array(
+					'CourseType.shortname',
+					'Course.startdate',
+					'Tier.id',
+					'role',
 					'Status.id'
 				);
 				$joins[] = array(
@@ -141,6 +171,13 @@ class InstructingsController extends OfcmAppController
 					'type'=>'LEFT',
 					'conditions'=>array(
 						'Course.id = Instructing.course_id'
+					));
+				$joins[] = array(
+					'table'=>'statuses',
+					'alias'=>'InvoiceStatus',
+					'type'=>'LEFT',
+					'conditions'=>array(
+						'InvoiceStatus.id = Instructing.invoice_status_id'
 					));
 				$joins[] = array(
 					'table'=>'course_types',
@@ -212,6 +249,7 @@ class InstructingsController extends OfcmAppController
 				break;
 
 				case 'user':
+				case 'invoice':
 					switch($_GET['iSortCol_0'])
 					{
 						case 0: $order = array('CourseType.shortname'=>$_GET['sSortDir_0']); break;
@@ -520,7 +558,7 @@ class InstructingsController extends OfcmAppController
 	{
 		if ($this->request->is('post') || $this->request->is('put'))
 		{
-			if ($this->request->data['Instructing']['name'] != $this->Auth->user('name'))
+			if (empty($this->request->data['Instructing']['name']) || $this->request->data['Instructing']['name'] != $this->Auth->user('first_name').' '.$this->Auth->user('last_name'))
 				$this->Session->setFlash('Please enter your name exactly how it is below.', 'notices/error');
 			else
 			{
@@ -528,7 +566,24 @@ class InstructingsController extends OfcmAppController
 				$this->Instructing->saveField('invoice_status_id', 29);
 				$this->Instructing->saveField('signed_date', date('Y-m-d'));
 				$this->Session->setFlash('Successfully signed and submitted invoice.', 'notices/success');
+
+				$this->Instructing->contain(array(
+					'User'
+				));
+				$ins = $this->Instructing->read(null, $id);
+
+				$args = array(
+					'email_template_id'=>18,
+					'sendTo'=>'jan@alerrt.org',
+					'from'=>array($ins['User']['email']=>$ins['User']['name']),
+					'replyTo'=>$ins['User']['email']
+				);
+				$result = $this->_sendTemplateEmail($args, $ins);
+
+
 				$this->redirect(array('action'=>'invoices'));
+
+
 			}
 		}
 

@@ -393,6 +393,12 @@ class InstructorsController extends OfcmAppController
 				$this->render('Instructors/pages/'.$page);
 			break;
 
+			case 'invoice':
+				$c = $this->Instructor->read(null, $id);
+				$this->set('instructor', $c);
+				$this->render('Instructors/pages/'.$page);
+			break;
+
 		}
 	}
 
