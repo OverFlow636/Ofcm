@@ -399,6 +399,32 @@ class InstructorsController extends OfcmAppController
 				$this->render('Instructors/pages/'.$page);
 			break;
 
+
+			case 'pr':
+				$this->loadModel('PeerReview');
+				$pr = $this->PeerReview->find('all', array(
+					'conditions'=>array(
+						'or'=>array(
+							'instructor_id'=>$id,
+							'instructor1_id'=>$id,
+							'instructor2_id'=>$id,
+							'instructor3_id'=>$id,
+							'instructor4_id'=>$id
+						)
+					),
+					'contain'=>array(
+						'I1.User',
+						'I2.User',
+						'I3.User',
+						'I4.User',
+						'Course.CourseType',
+						'Instructor.User'
+					)
+				));
+				$this->set('pr', $pr);
+				$this->set('ins', $id);
+				$this->render('Instructors/pages/'.$page);
+			break;
 		}
 	}
 
