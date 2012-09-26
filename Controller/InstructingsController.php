@@ -575,7 +575,7 @@ class InstructingsController extends OfcmAppController
 
 				$args = array(
 					'email_template_id'=>18,
-					'sendTo'=>'jan@alerrt.org',
+					'sendTo'=>'emily@alerrt.org',
 					'from'=>array($ins['User']['email']=>$ins['User']['name']),
 					'replyTo'=>$ins['User']['email']
 				);
