@@ -487,7 +487,8 @@ class InstructingsController extends OfcmAppController
 			$inv = $this->Instructing->find('all', array(
 				'conditions'=>array(
 					'invoice_status_id NOT'=>null,
-					'Course.previous_course_id'=>null
+					'Course.previous_course_id'=>null,
+					'Instructing.user_id'=>$this->Auth->user('id')
 				),
 				'contain'=>array(
 					'User',
