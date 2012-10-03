@@ -1497,4 +1497,49 @@ END:VCALENDAR';
 			'order'=>'Course.startdate ASC'
 		)));
 	}
+
+
+
+
+	/* kiosk */
+	public function kiosk_conference($cid)
+	{
+		$this->set('courses', $this->Course->find('all', array(
+			'conditions'=>array(
+				'conference_id'=>$cid
+			),
+			'contain'=>array(
+				'Attending',
+				'CourseType'
+			)
+		)));
+
+		$this->set('conf', $cid);
+		$this->set('conflist', $this->Course->Conference->find('list'));
+	}
+
+	public function kiosk_getOpenAjaxConference($cid)
+	{
+		$ret = array();
+		$courses = $this->Course->find('all', array(
+			'conditions'=>array(
+				'conference_id'=>$cid
+			),
+			'contain'=>array(
+				'Attending',
+				'CourseType'
+			)
+		));
+
+		foreach($courses as $course)
+		{
+			$open = $course['CourseType']['maxStudents'] - count($course['Attending']);
+			$ret[] = array(
+				'id'=>$course['Course']['id'],
+				'name'=>date('D', strtotime($course['Course']['startdate'])).' '.$course['CourseType']['shortname'].' ('.$open.' seats)'
+			);
+		}
+
+		die(json_encode($ret));
+	}
 }

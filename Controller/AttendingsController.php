@@ -341,6 +341,78 @@ class AttendingsController extends OfcmAppController
 						'CourseType.id = Course.course_type_id'
 					));
 			break;
+
+			case 'kcid':
+				$conditions['Attending.course_id'] = $id;
+
+					$aColumns = array(
+						'Attending.id',
+						'User.name',
+						'Agency.name',
+						'CourseType.shortname',
+						'Course.startdate',
+						'PaymentStatus.id',
+						'Status.id',
+					);
+
+				$joins[] = array(
+					'table'=>'locations',
+					'alias'=>'UserLocation',
+					'type'=>'LEFT',
+					'conditions'=>array(
+						'UserLocation.id = User.home_address'
+					));
+				$joins[] = array(
+					'table'=>'states',
+					'alias'=>'UserState',
+					'type'=>'LEFT',
+					'conditions'=>array(
+						'UserState.id = UserLocation.state_id'
+					));
+				$joins[] = array(
+					'table'=>'locations',
+					'alias'=>'AgencyLocation',
+					'type'=>'LEFT',
+					'conditions'=>array(
+						'AgencyLocation.id = Agency.main_address_id'
+					));
+				$joins[] = array(
+					'table'=>'states',
+					'alias'=>'AgencyState',
+					'type'=>'LEFT',
+					'conditions'=>array(
+						'AgencyState.id = AgencyLocation.state_id'
+					));
+				$joins[] = array(
+					'table'=>'payments',
+					'alias'=>'Payment',
+					'type'=>'LEFT',
+					'conditions'=>array(
+						'Payment.id = Attending.payment_id'
+					));
+				$joins[] = array(
+					'table'=>'statuses',
+					'alias'=>'PaymentStatus',
+					'type'=>'LEFT',
+					'conditions'=>array(
+						'PaymentStatus.id = Payment.status_id'
+					));
+				$joins[] = array(
+					'table'=>'courses',
+					'alias'=>'Course',
+					'type'=>'LEFT',
+					'conditions'=>array(
+						'Course.id = Attending.course_id'
+					));
+				$joins[] = array(
+					'table'=>'course_types',
+					'alias'=>'CourseType',
+					'type'=>'LEFT',
+					'conditions'=>array(
+						'CourseType.id = Course.course_type_id'
+					));
+				$type = 'conf';
+			break;
 		}
 
 		$order = array(
@@ -1087,7 +1159,7 @@ class AttendingsController extends OfcmAppController
 
 	public function beforeFilter()
 	{
-		if ($this->request->params['action'] == 'admin_search')
+		if ($this->request->params['action'] == 'admin_search' || $this->request->params['action'] == 'kiosk_customBadge')
 			$this->Security->csrfCheck = false;
 		parent::beforeFilter();
 	}
@@ -1102,7 +1174,7 @@ class AttendingsController extends OfcmAppController
 
 
 
-	public function kiosk_print()
+	public function kiosk_print($template = 'student')
 	{
 		$prints = array();
 		foreach($this->request->data['attending'] as $attid => $selected)
@@ -1115,6 +1187,7 @@ class AttendingsController extends OfcmAppController
 			}
 
 		$this->set('prints', $prints);
+		$this->set('template', $template);
 	}
 
 	public function kiosk_conference($conf = null)
@@ -1130,7 +1203,7 @@ class AttendingsController extends OfcmAppController
 		$this->set('conf', $courseid);
 	}
 
-	public function kiosk_bulkEdit($courseid = null)
+	public function kiosk_bulkEdit()
 	{
 		foreach($this->request->data['attending'] as $attid => $selected)
 			if ($selected)
@@ -1142,12 +1215,17 @@ class AttendingsController extends OfcmAppController
 						$this->Attending->saveField('status_id', 13);
 					break;
 
-					case 'CA': $this->Attending->saveField('status_id', 15); break;
-					case 'NS': $this->Attending->saveField('status_id', 19); break;
-					case 'PE': $this->Attending->saveField('status_id', 1); break;
+					case 'CA':  //cancel
+						if ($this->Attending->field('course_id') != 2075)
+							$this->Attending->saveField('course_id', 2075); //remove them from a real class to free space
+
+						$this->Attending->saveField('status_id', 15);
+					break;
+					case 'NS': $this->Attending->saveField('status_id', 19); break; //noshow
+					case 'PE': $this->Attending->saveField('status_id', 1); break; //pending
 
 					case 'SW':
-
+						$this->Attending->saveField('course_id', $this->request->data['Attending']['course_id']);
 					break;
 
 
@@ -1156,5 +1234,67 @@ class AttendingsController extends OfcmAppController
 
 		$this->set('message', 'Saved student changes');
 		//$this->redirect(array('controller'=>'Courses', 'action'=>'view', $courseid, 'students'));
+	}
+
+	public function kiosk_course($conf, $cid)
+	{
+		$this->set('cid', $cid);
+		$this->Attending->Course->contain(array('CourseType'));
+		$this->set('course', $this->Attending->Course->read(null, $cid));
+		$this->set('conf', $conf);
+		$this->set('conflist', $this->Attending->Conference->find('list'));
+	}
+
+	public function kiosk_addToConf($conf)
+	{
+		if ($this->request->is('post') || $this->request->is('put'))
+		{
+			//die(pr($this->request->data));
+			$this->Attending->User->create($this->request->data['User']);
+			if ($this->Attending->User->validates())
+			{
+				$this->User->save();
+				$this->request->data['Attending']['user_id'] = $this->Attending->User->id;
+
+				$this->loadModel('Payment');
+				$this->Payment->save(array(
+					'user_id'=>$this->Attending->User->id,
+					'conference_id'=>$conf,
+					'total'=>150,
+					'status'=>11
+				));
+				$this->request->data['Attending']['payment_id'] = $this->Payment->id;
+
+				$this->loadModel('LineItem');
+				$this->LineItem->save(array(
+					'user_id'=>$this->Attending->User->id,
+					'conference_id'=>$conf,
+					'total'=>150,
+					'payment_id'=>$this->Payment->id,
+					'course_id'=>$this->request->data['Attending']['course_id']
+				));
+				$this->request->data['Attending']['line_item_id'] = $this->LineItem->id;
+
+				$this->Attending->save($this->request->data['Attending']);
+
+				$this->redirect(array('action'=>'conference', $conf));
+			}
+
+		}
+
+
+		$this->set('conf', $conf);
+		$this->set('conflist', $this->Attending->Conference->find('list'));
+	}
+
+	public function kiosk_customBadge($conf)
+	{
+		$this->set('conf', $conf);
+		if ($this->request->is('post') || $this->request->is('put'))
+		{
+			$this->render('customprint');
+		}
+
+		$this->set('conflist', $this->Attending->Conference->find('list'));
 	}
 }
